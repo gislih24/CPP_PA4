@@ -1,3 +1,5 @@
+#include "game_state.hpp"
+
 // Abstract function GameState with pure virtal functions
 class GameState {
   public:
