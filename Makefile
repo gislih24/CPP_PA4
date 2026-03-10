@@ -4,9 +4,9 @@ CXXEXTRAFLAGS := -std=c++23 -O0 -g3 -Wall -Wextra -Wpedantic -Wconversion -Wsign
 INCLUDES := -I.
 
 BIN_DIR := bin
-TARGET := ast_program # TODO: change this
-SRC := main.cpp AST.cpp # TODO: change this
-HDR := AST.h # TODO: change this
+TARGET := jrpg
+SRC := $(wildcard src/*.cpp)
+HDR := $(wildcard src/*.hpp)
 
 # Available targets
 .PHONY: all build run clean strict
@@ -14,11 +14,11 @@ HDR := AST.h # TODO: change this
 # `make all` is an alias for `make build`.
 all: build
 
-# `make build` compiles the program by requiring `bin/ast_program`.
+# `make build` compiles the program by requiring `bin/jrpg`.
 build: $(BIN_DIR)/$(TARGET)
 
 # This recipe runs when `make`, `make all`, or `make build` needs to create or
-# update `bin/ast_program` (for example, when sources/headers changed).
+# update `bin/jrpg` (for example, when sources/headers changed).
 $(BIN_DIR)/$(TARGET): $(SRC) $(HDR)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $(SRC) -o $@
