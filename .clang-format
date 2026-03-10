@@ -1,0 +1,12 @@
+---
+BasedOnStyle: LLVM # Or use: Google, Chromium, Mozilla, WebKit, Microsoft, GNU
+BreakBeforeBraces: Attach # Keep opening braces on the same line
+PointerAlignment: Left # Align pointers to the left
+
+# Other common preferences
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 80
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
