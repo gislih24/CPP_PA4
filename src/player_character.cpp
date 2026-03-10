@@ -1,6 +1,6 @@
 #include "entity.cpp"
 
-class Enemy : public Entity {
+class PlayerCharacter : public Entity {
 public:
     int target_hp_before;
     int target_hp_after;
