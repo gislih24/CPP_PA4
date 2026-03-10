@@ -1,3 +1,4 @@
+#include "entity.hpp"
 #include "stats.hpp"
 #include <string>
 
@@ -9,11 +10,11 @@ class Entity {
     Stats stats;
     int hp;
 
-    virtual void take_dmg(int val) {
+    void take_dmg(int val) {
         hp -= val;
     }
 
-    virtual void heal(int val) {
+    void heal(int val) {
         if ((hp + val) > stats.max_hp) {
             hp = stats.max_hp;
         } else if (hp >= 0) {
@@ -23,7 +24,7 @@ class Entity {
         }
     }
 
-    virtual bool is_alive() {
+    bool is_alive() {
         if (hp <= 0) {
             return false;
         } else {
