@@ -60,11 +60,11 @@ class GameOverState {
 class World{
     Map map
     std::vector~Enemy~ enemies
-    Player player
+    PlayerCharacter player
 }
 
 World "1" *-- "1" Map
-World "1" *-- "1" Player
+World "1" *-- "1" PlayerCharacter
 World "1" *-- "1..*" Enemy
 
 class Entity{
@@ -79,7 +79,7 @@ class Entity{
 }
 
 Entity "1" *-- "1" Stats
-Entity <|-- Player
+Entity <|-- PlayerCharacter
 Entity <|-- Enemy
 
 class Stats{
@@ -88,7 +88,7 @@ class Stats{
     +int defence
 }
 
-class Player{
+class PlayerCharacter{
     +move()
 }
 
