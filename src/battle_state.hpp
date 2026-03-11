@@ -15,21 +15,8 @@ class BattleState final : public GameState {
     bool in_battle = true;
     int damage_dealt;
 
-    BattleState() {
-        pc.stats.attack = 2;
-        pc.stats.defence = 1;
-        pc.stats.max_hp = 10;
-        pc.hp = pc.stats.max_hp;
-
-        enemy.stats.attack = 4;
-        enemy.stats.defence = 1;
-        enemy.stats.max_hp = 10;
-        enemy.hp = enemy.stats.max_hp;
-    }
-
+    BattleState();
     void render() override;
-
     void handle_input() override;
-
     void update() override;
 };

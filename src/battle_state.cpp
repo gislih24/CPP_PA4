@@ -6,6 +6,18 @@
 #include <print>
 #include <string>
 
+BattleState::BattleState() {
+    pc.stats.attack = 2;
+    pc.stats.defence = 1;
+    pc.stats.max_hp = 10;
+    pc.hp = pc.stats.max_hp;
+
+    enemy.stats.attack = 4;
+    enemy.stats.defence = 1;
+    enemy.stats.max_hp = 10;
+    enemy.hp = enemy.stats.max_hp;
+}
+
 void BattleState::render() override {
     std::print("Woe! A fiend is upon ye!\n");
 
