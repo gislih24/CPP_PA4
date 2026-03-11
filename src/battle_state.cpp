@@ -1,5 +1,5 @@
 #include "enemy.cpp"
-#include "game_state.cpp"
+#include "game_state.hpp"
 #include "player_character.cpp"
 #include <iostream>
 #include <print>
