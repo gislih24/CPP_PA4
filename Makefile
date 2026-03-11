@@ -1,4 +1,4 @@
-CXX := g++
+CXX := g++-14
 CXXFLAGS := -std=c++23 -O2 -Wall -Wextra -pedantic
 CXXEXTRAFLAGS := -std=c++23 -O0 -g3 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow -Wformat=2 -Wnull-dereference -fno-omit-frame-pointer -D_GLIBCXX_ASSERTIONS -D_GLIBCXX_DEBUG 
 INCLUDES := -I.
