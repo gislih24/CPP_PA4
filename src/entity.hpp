@@ -1,5 +1,4 @@
-#ifndef ENTITY_HPP
-#define ENTITY_HPP
+#pragma once
 
 #include "stats.hpp"
 #include <string>
@@ -16,5 +15,3 @@ class Entity {
     virtual void heal(int val);
     virtual bool is_alive() const;
 };
-
-#endif // ENTITY_HPP
