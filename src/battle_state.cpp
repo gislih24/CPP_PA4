@@ -1,7 +1,7 @@
-#include "battle_state.hpp"
-#include "enemy.hpp"
-#include "game_state.hpp"
-#include "player_character.hpp"
+#include "./include/battle_state.hpp"
+#include "./include/enemy.hpp"
+#include "./include/game_state.hpp"
+#include "./include/player_character.hpp"
 #include <format>
 #include <iostream>
 #include <print>

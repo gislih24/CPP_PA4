@@ -1,7 +1,7 @@
-#include "main_menu_state.hpp"
-// #include "explore_state.hpp" // TODO
-#include "battle_state.hpp"
-#include "game.hpp"
+#include "./include/main_menu_state.hpp"
+// #include "./include/explore_state.hpp" // TODO
+#include "./include/battle_state.hpp"
+#include "./include/game.hpp"
 #include <cctype>
 #include <iostream>
 #include <memory>

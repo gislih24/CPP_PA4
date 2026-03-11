@@ -1,4 +1,4 @@
-#include "entity.hpp"
+#include "./include/entity.hpp"
 #include <string>
 
 void Entity::take_dmg(int val) {

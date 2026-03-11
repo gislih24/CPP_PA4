@@ -1,5 +1,5 @@
-#include "player_character.hpp"
-#include "entity.hpp"
+#include "./include/player_character.hpp"
+#include "./include/entity.hpp"
 
 int PlayerCharacter::attack(Entity& target) {
     target_hp_before = target.hp;

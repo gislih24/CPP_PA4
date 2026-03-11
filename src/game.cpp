@@ -1,5 +1,5 @@
-#include "game.hpp"
-#include "game_state.hpp"
+#include "./include/game.hpp"
+#include "./include/game_state.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <string>

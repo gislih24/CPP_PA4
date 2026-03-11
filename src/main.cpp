@@ -1,5 +1,5 @@
-#include "game.hpp"
-#include "main_menu_state.hpp"
+#include "./include/game.hpp"
+#include "./include/main_menu_state.hpp"
 #include <memory>
 
 int main() {
