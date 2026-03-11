@@ -2,8 +2,9 @@
 #include "enemy.hpp"
 #include "game_state.hpp"
 #include "player_character.hpp"
+#include <format>
 #include <iostream>
-// #include <print>
+#include <print>
 #include <string>
 #include <vector>
 
@@ -29,7 +30,7 @@ void BattleState::render(const Game& game) const {
          {&combat_log_, &status_display_, &action_menu_}) {
         // For each message in the current message vector
         for (const auto& message : *message_vector) {
-            std::cout << message << '\n'; // Print it
+            std::print(message); // Print it
         }
     }
 }
@@ -43,11 +44,9 @@ void BattleState::handle_input(Game& game, std::string_view input) {
             // attack
             damage_dealt = pc.attack(enemy);
             if (damage_dealt > 0) {
-
-                action_menu_.push_back(
-                    "Choose an action:\n1. attack\n0. flee\n");
-                std::cout << "You hit the enemy and dealt {} damage\n"
-                          << damage_dealt;
+                std::string new_message = std::format(
+                    "You hit the enemy and dealt {} damage\n", damage_dealt);
+                combat_log_.push_back(new_message);
             }
             if (!enemy.is_alive()) {
                 in_battle = false;
