@@ -14,7 +14,7 @@ class Entity {
 
     virtual void take_dmg(int val);
     virtual void heal(int val);
-    virtual bool is_alive();
+    virtual bool is_alive() const;
 };
 
 #endif // ENTITY_HPP
