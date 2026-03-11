@@ -30,7 +30,7 @@ void BattleState::render(const Game&) const {
          {&combat_log_, &status_display_, &action_menu_}) {
         // For each message in the current message vector
         for (const auto& message : *message_vector) {
-            std::print(message); // Print it
+            std::print("{}", message); // Print it
         }
     }
 }
