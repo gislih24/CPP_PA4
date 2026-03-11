@@ -41,5 +41,5 @@
 *.dwo
 /build
 /.vscode
-compile_commands.json
 src/jrpg
+compile_commands.json
