@@ -7,11 +7,11 @@
 #include <string>
 #include <string_view>
 
-void MainMenuState::on_enter(Game& game) {
+void MainMenuState::on_enter(Game&) {
     message_ = "Choose an option.";
 }
 
-void MainMenuState::render(const Game& game) const {
+void MainMenuState::render(const Game&) const {
     std::cout << "\n"
               << "====================\n"
               << "      TINY JRPG     \n"
@@ -28,7 +28,7 @@ void MainMenuState::handle_input(Game& game, std::string_view input) {
 
     if (choice == "1" || choice == "new" || choice == "new game") {
         game.get_world().reset_new_game();
-        game.request_state_change(std::make_unique<ExploreState>());
+        game.request_state_change(std::make_unique<BattleState>());
         return;
     } else if (choice == "2" || choice == "quit" || choice == "exit") {
         game.quit();

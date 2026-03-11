@@ -4,8 +4,9 @@
 #include "game_state.hpp"
 #include "player_character.hpp"
 #include <iostream>
-// #include <print>
+#include <print>
 #include <string>
+#include <vector>
 
 class BattleState final : public GameState {
   public:
@@ -13,7 +14,7 @@ class BattleState final : public GameState {
     Enemy enemy = Enemy{};
     std::string line;
     bool in_battle = true;
-    int damage_dealt;
+    int damage_dealt = 0;
 
     BattleState();
     void on_enter(Game& game) override;

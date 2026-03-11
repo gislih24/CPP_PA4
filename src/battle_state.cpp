@@ -20,11 +20,11 @@ BattleState::BattleState() {
     enemy.hp = enemy.stats.max_hp;
 }
 
-void BattleState::on_enter(Game& game) {
-    combat_log_.push_back("Woe, a fiend is upon ye!");
+void BattleState::on_enter(Game&) {
+    combat_log_.emplace_back("Woe, a fiend is upon ye!");
 }
 
-void BattleState::render(const Game& game) const {
+void BattleState::render(const Game&) const {
     // For each of the message vectors
     for (const auto* message_vector :
          {&combat_log_, &status_display_, &action_menu_}) {
@@ -35,49 +35,50 @@ void BattleState::render(const Game& game) const {
     }
 }
 
-void BattleState::handle_input(Game& game, std::string_view input) {
+void BattleState::handle_input(Game&, std::string_view input) {
+    const std::string choice = normalize_input(input);
+
     clear_message_vectors();
-    if (in_battle && (pc.hp > 0) && (enemy.hp > 0)) {
-        // player turn
-        action_menu_.push_back("Choose an action:\n1. attack\n0. flee\n");
-        if (input == "1") {
-            // attack
-            damage_dealt = pc.attack(enemy);
-            if (damage_dealt > 0) {
-                std::string new_message = std::format(
-                    "You hit the enemy and dealt {} damage\n", damage_dealt);
-                combat_log_.push_back(new_message);
-            }
-            if (!enemy.is_alive()) {
-                in_battle = false;
-            }
-        } else if (input == "2") {
-            // flee
-            std::cout << "You flee... a coward's choice\n";
+
+    if (!in_battle || !pc.is_alive() || !enemy.is_alive()) {
+        combat_log_.push_back("The battle is already over.\n");
+        return;
+    }
+
+    if (choice == "1" || choice == "attack") {
+        damage_dealt = pc.attack(enemy);
+        combat_log_.push_back("You hit the enemy and dealt " +
+                              std::to_string(damage_dealt) + " damage.\n");
+
+        if (!enemy.is_alive()) {
             in_battle = false;
+            combat_log_.push_back("You emerge victorious!\n");
         }
-    default:
-            std::cout <<"Invalid choice\n");
-            continue;
+    } else if (choice == "2" || choice == "flee") {
+        in_battle = false;
+        combat_log_.push_back("You flee... a coward's choice.\n");
+    } else {
+        combat_log_.push_back("Invalid choice.\n");
     }
 
-    if (!in_battle || !enemy.is_alive()) {
-        break;
-    }
-
-    // enemy's turn
-    damage_dealt = enemy.attack(pc);
-        std::cout <<"You were hit for {} damage\n", damage_dealt);
+    if (in_battle && enemy.is_alive()) {
+        damage_dealt = enemy.attack(pc);
+        combat_log_.push_back("You were hit for " +
+                              std::to_string(damage_dealt) + " damage.\n");
         if (!pc.is_alive()) {
             in_battle = false;
-            break;
+            combat_log_.push_back("You have died... shameful display!\n");
         }
-}
-if (!pc.is_alive()) {
-        std::cout <<"You have died... shameful display!\n");
-} else if (!enemy.is_alive()) {
-        std::cout <<"You emerge victorious!\n");
-}
+    }
+
+    if (in_battle) {
+        status_display_.push_back("Your HP: " + std::to_string(pc.hp) + "/" +
+                                  std::to_string(pc.stats.max_hp) + "\n");
+        status_display_.push_back("Enemy HP: " + std::to_string(enemy.hp) +
+                                  "/" + std::to_string(enemy.stats.max_hp) +
+                                  "\n");
+        action_menu_.push_back("Choose an action:\n1. attack\n2. flee\n");
+    }
 }
 
 void BattleState::clear_message_vectors() {
