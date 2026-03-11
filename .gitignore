@@ -43,3 +43,4 @@
 /.vscode
 src/jrpg
 compile_commands.json
+bin/jrpg

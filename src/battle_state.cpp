@@ -2,9 +2,11 @@
 #include "enemy.hpp"
 #include "game_state.hpp"
 #include "player_character.hpp"
+#include <format>
 #include <iostream>
 #include <print>
 #include <string>
+#include <vector>
 
 BattleState::BattleState() {
     pc.stats.attack = 2;
@@ -18,55 +20,77 @@ BattleState::BattleState() {
     enemy.hp = enemy.stats.max_hp;
 }
 
-void BattleState::render() override {
-    std::print("Woe! A fiend is upon ye!\n");
+void BattleState::on_enter(Game&) {
+    combat_log_.emplace_back("Woe, a fiend is upon ye!");
+}
 
-    while (in_battle && (pc.hp > 0) && (enemy.hp > 0)) {
-        // player turn
-        std::print("Choose an action:\n1. attack\n0. flee\n");
-        std::getline(std::cin, line);
-        int choice = std::stoi(line);
-        switch (choice) {
-        case 1:
-            // attack
-            damage_dealt = pc.attack(enemy);
-            if (damage_dealt > 0) {
-                std::print("You hit the enemy and dealt {} damage\n",
-                           damage_dealt);
-            }
-            if (!enemy.is_alive()) {
-                in_battle = false;
-            }
-            break;
-        case 0:
-            // flee
-            std::print("You flee... a coward's choice\n");
-            in_battle = false;
-            break;
-        default:
-            std::print("Invalid choice\n");
-            continue;
+void BattleState::render(const Game&) const {
+    // For each of the message vectors
+    for (const auto* message_vector :
+         {&combat_log_, &status_display_, &action_menu_}) {
+        // For each message in the current message vector
+        for (const auto& message : *message_vector) {
+            std::print("{}", message); // Print it
         }
-
-        if (!in_battle || !enemy.is_alive()) {
-            break;
-        }
-
-        // enemy's turn
-        damage_dealt = enemy.attack(pc);
-        std::print("You were hit for {} damage\n", damage_dealt);
-        if (!pc.is_alive()) {
-            in_battle = false;
-            break;
-        }
-    }
-    if (!pc.is_alive()) {
-        std::print("You have died... shameful display!\n");
-    } else if (!enemy.is_alive()) {
-        std::print("You emerge victorious!\n");
     }
 }
 
-void BattleState::handle_input() override {}
+void BattleState::handle_input(Game&, std::string_view input) {
+    const std::string choice = normalize_input(input);
 
-void BattleState::update() override {}
+    clear_message_vectors();
+
+    // If for some reason the battle started, but it's already over.
+    if (!in_battle || !pc.is_alive() || !enemy.is_alive()) {
+        combat_log_.emplace_back("The battle is already over.\n");
+        return;
+    }
+
+    if (choice == "1" || choice == "attack") {
+        damage_dealt = pc.attack(enemy);
+        combat_log_.emplace_back(
+            std::format("You hit the enemy and dealt {} damage.\n",
+                        std::to_string(damage_dealt)));
+
+        if (!enemy.is_alive()) {
+            in_battle = false;
+            combat_log_.emplace_back("You emerge victorious!\n");
+        }
+    } else if (choice == "2" || choice == "flee") {
+        in_battle = false;
+        combat_log_.emplace_back("You flee... a coward's choice.\n");
+        // TODO: Add the line:
+        // game.request_state_change(std::make_unique<ExploreState>)
+    } else {
+        combat_log_.emplace_back("Invalid choice.\n");
+    }
+
+    // Basic attack from enemy.
+    if (in_battle && enemy.is_alive()) {
+        damage_dealt = enemy.attack(pc);
+        combat_log_.emplace_back(std::format("You were hit for {} damage.\n",
+                                             std::to_string(damage_dealt)));
+        // YOU DIED
+        if (!pc.is_alive()) {
+            in_battle = false;
+            combat_log_.emplace_back("You have died... shameful display!\n");
+            // TODO: Add the line:
+            // game.request_state_change(std::make_unique<GameOverState>)
+        }
+    }
+
+    // Update the status display
+    if (in_battle) {
+        status_display_.emplace_back(
+            std::format("Your HP: {}/{}", pc.hp, pc.stats.max_hp));
+        status_display_.emplace_back(
+            std::format("Enemy HP: {}/{}", enemy.hp, enemy.stats.max_hp));
+        action_menu_.emplace_back("Choose an action:\n1. attack\n2. flee\n");
+    }
+}
+
+void BattleState::clear_message_vectors() {
+    combat_log_.clear();
+    status_display_.clear();
+    action_menu_.clear();
+}

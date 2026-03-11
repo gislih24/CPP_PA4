@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cctype>
+#include <string>
 #include <string_view>
 
 class Game;
@@ -19,7 +21,7 @@ class GameState {
      * @param input The input string to normalize.
      * @return The normalized string.
      */
-    std::string normalize_input(std::string_view input) {
+    std::string normalize_input(std::string_view input) const {
         std::size_t start = 0;
         while (start < input.size() &&
                std::isspace(static_cast<unsigned char>(input[start]))) {
