@@ -10,21 +10,11 @@ class Game {
     explicit Game(std::unique_ptr<GameState> initial_state);
 
     void run();
-
     void request_state_change(std::unique_ptr<GameState> next_state);
     void quit() noexcept;
-
-    bool is_running() const noexcept {
-        return game_is_running_;
-    }
-
-    World& get_world() noexcept {
-        return world_;
-    }
-
-    const World& get_world() const noexcept {
-        return world_;
-    }
+    bool is_running() const noexcept;
+    World& get_world() noexcept;
+    const World& get_world() const noexcept;
 
   private:
     void apply_pending_state_change();

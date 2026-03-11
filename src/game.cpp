@@ -50,8 +50,10 @@ void Game::run() {
 }
 
 /**
- * @brief Puts the input state change into a pending state, which will be
- * applied at the end of the current frame.
+ * @brief A method that lets game states request a new state.
+ *
+ * E.g., the MainMenuState might request to go to the ExploreState after a
+ * player selects a certain option.
  * @param next_state The next state to transition to.
  */
 void Game::request_state_change(std::unique_ptr<GameState> next_state) {
@@ -61,6 +63,18 @@ void Game::request_state_change(std::unique_ptr<GameState> next_state) {
 // Quit the game.
 void Game::quit() noexcept {
     game_is_running_ = false;
+}
+
+bool Game::is_running() const noexcept {
+    return game_is_running_;
+}
+
+World& Game::get_world() noexcept {
+    return world_;
+}
+
+const World& Game::get_world() const noexcept {
+    return world_;
 }
 
 /**
