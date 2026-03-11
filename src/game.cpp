@@ -1,11 +1,9 @@
 #include "game.hpp"
-
+#include "game_state.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <utility>
-
-#include "game_state.hpp"
 
 Game::Game(std::unique_ptr<GameState> initial_state)
     : current_state_(std::move(initial_state)) {
