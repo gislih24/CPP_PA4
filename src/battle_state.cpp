@@ -59,6 +59,8 @@ void BattleState::handle_input(Game&, std::string_view input) {
     } else if (choice == "2" || choice == "flee") {
         in_battle = false;
         combat_log_.emplace_back("You flee... a coward's choice.\n");
+        // TODO: Add the line:
+        // game.request_state_change(std::make_unique<ExploreState>)
     } else {
         combat_log_.emplace_back("Invalid choice.\n");
     }
@@ -72,6 +74,8 @@ void BattleState::handle_input(Game&, std::string_view input) {
         if (!pc.is_alive()) {
             in_battle = false;
             combat_log_.emplace_back("You have died... shameful display!\n");
+            // TODO: Add the line:
+            // game.request_state_change(std::make_unique<GameOverState>)
         }
     }
 
