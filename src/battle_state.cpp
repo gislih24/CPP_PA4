@@ -41,43 +41,43 @@ void BattleState::handle_input(Game&, std::string_view input) {
     clear_message_vectors();
 
     if (!in_battle || !pc.is_alive() || !enemy.is_alive()) {
-        combat_log_.push_back("The battle is already over.\n");
+        combat_log_.emplace_back("The battle is already over.\n");
         return;
     }
 
     if (choice == "1" || choice == "attack") {
         damage_dealt = pc.attack(enemy);
-        combat_log_.push_back("You hit the enemy and dealt " +
-                              std::to_string(damage_dealt) + " damage.\n");
+        combat_log_.emplace_back(
+            std::format("You hit the enemy and dealt {} damage.\n",
+                        std::to_string(damage_dealt)));
 
         if (!enemy.is_alive()) {
             in_battle = false;
-            combat_log_.push_back("You emerge victorious!\n");
+            combat_log_.emplace_back("You emerge victorious!\n");
         }
     } else if (choice == "2" || choice == "flee") {
         in_battle = false;
-        combat_log_.push_back("You flee... a coward's choice.\n");
+        combat_log_.emplace_back("You flee... a coward's choice.\n");
     } else {
-        combat_log_.push_back("Invalid choice.\n");
+        combat_log_.emplace_back("Invalid choice.\n");
     }
 
     if (in_battle && enemy.is_alive()) {
         damage_dealt = enemy.attack(pc);
-        combat_log_.push_back("You were hit for " +
-                              std::to_string(damage_dealt) + " damage.\n");
+        combat_log_.emplace_back(std::format("You were hit for {} damage.\n",
+                                             std::to_string(damage_dealt)));
         if (!pc.is_alive()) {
             in_battle = false;
-            combat_log_.push_back("You have died... shameful display!\n");
+            combat_log_.emplace_back("You have died... shameful display!\n");
         }
     }
 
     if (in_battle) {
-        status_display_.push_back("Your HP: " + std::to_string(pc.hp) + "/" +
-                                  std::to_string(pc.stats.max_hp) + "\n");
-        status_display_.push_back("Enemy HP: " + std::to_string(enemy.hp) +
-                                  "/" + std::to_string(enemy.stats.max_hp) +
-                                  "\n");
-        action_menu_.push_back("Choose an action:\n1. attack\n2. flee\n");
+        status_display_.emplace_back(
+            std::format("Your HP: {}/{}", pc.hp, pc.stats.max_hp));
+        status_display_.emplace_back(
+            std::format("Enemy HP: {}/{}", enemy.hp, enemy.stats.max_hp));
+        action_menu_.emplace_back("Choose an action:\n1. attack\n2. flee\n");
     }
 }
 
