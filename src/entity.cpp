@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stats.cpp"
+#include "stats.hpp"
 #include <string>
 
 class Entity {
