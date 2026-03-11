@@ -1,7 +1,7 @@
 #include "entity.cpp"
 
 class PlayerCharacter : public Entity {
-public:
+  public:
     int target_hp_before;
     int target_hp_after;
     int damage_dealt;
