@@ -40,6 +40,7 @@ void BattleState::handle_input(Game&, std::string_view input) {
 
     clear_message_vectors();
 
+    // If for some reason the battle started, but it's already over.
     if (!in_battle || !pc.is_alive() || !enemy.is_alive()) {
         combat_log_.emplace_back("The battle is already over.\n");
         return;
@@ -62,16 +63,19 @@ void BattleState::handle_input(Game&, std::string_view input) {
         combat_log_.emplace_back("Invalid choice.\n");
     }
 
+    // Basic attack from enemy.
     if (in_battle && enemy.is_alive()) {
         damage_dealt = enemy.attack(pc);
         combat_log_.emplace_back(std::format("You were hit for {} damage.\n",
                                              std::to_string(damage_dealt)));
+        // YOU DIED
         if (!pc.is_alive()) {
             in_battle = false;
             combat_log_.emplace_back("You have died... shameful display!\n");
         }
     }
 
+    // Update the status display
     if (in_battle) {
         status_display_.emplace_back(
             std::format("Your HP: {}/{}", pc.hp, pc.stats.max_hp));
