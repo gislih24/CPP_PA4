@@ -1,8 +1,7 @@
 #pragma once
 
-#include <memory>
-
 #include "world.hpp"
+#include <memory>
 
 class GameState;
 

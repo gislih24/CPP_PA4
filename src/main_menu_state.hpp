@@ -1,8 +1,7 @@
 #pragma once
 
-#include <string>
-
 #include "game_state.hpp"
+#include <string>
 
 class MainMenuState final : public GameState {
   public:
