@@ -9,15 +9,15 @@
 #include <vector>
 
 BattleState::BattleState() {
-    pc.stats.attack = 2;
-    pc.stats.defence = 1;
-    pc.stats.max_hp = 10;
-    pc.hp = pc.stats.max_hp;
+    pc.set_attack(2);
+    pc.set_defence(1);
+    pc.set_max_hp(10);
+    pc.set_hp(pc.get_stats().max_hp);
 
-    enemy.stats.attack = 4;
-    enemy.stats.defence = 1;
-    enemy.stats.max_hp = 10;
-    enemy.hp = enemy.stats.max_hp;
+    enemy.set_attack(4);
+    enemy.set_defence(1);
+    enemy.set_max_hp(10);
+    enemy.set_hp(enemy.get_stats().max_hp);
 }
 
 void BattleState::on_enter(Game&) {
@@ -82,9 +82,9 @@ void BattleState::handle_input(Game&, std::string_view input) {
     // Update the status display
     if (in_battle) {
         status_display_.emplace_back(
-            std::format("Your HP: {}/{}", pc.hp, pc.stats.max_hp));
-        status_display_.emplace_back(
-            std::format("Enemy HP: {}/{}", enemy.hp, enemy.stats.max_hp));
+            std::format("Your HP: {}/{}", pc.get_hp(), pc.get_stats().max_hp));
+        status_display_.emplace_back(std::format(
+            "Enemy HP: {}/{}", enemy.get_hp(), enemy.get_stats().max_hp));
         action_menu_.emplace_back("Choose an action:\n1. attack\n2. flee\n");
     }
 }
