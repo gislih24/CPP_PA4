@@ -1,16 +1,10 @@
-#include "player_character.cpp"
+#include "./include/character_classes.hpp"
 
-class Knight : public PlayerCharacter {
-    void shield_brace() {
-        // ability that increases defence for all allies
-    }
-};
+void Knight::shield_brace() {
+}
 
-class Wizard : public PlayerCharacter {
-    void fireball() {
-        // damage all enemies
-    }
-    void heal() {
-        // heal target ally
-    }
-};
+void Wizard::fireball() {
+}
+
+void Wizard::heal() {
+}

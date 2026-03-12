@@ -2,9 +2,9 @@
 #include "./include/entity.hpp"
 
 int PlayerCharacter::attack(Entity& target) {
-    int target_hp_before = target.get_hp();
-    target.take_dmg(get_stats().attack);
-    int target_hp_after = target.get_hp();
-    int damage_dealt = target_hp_before - target_hp_after;
+    target_hp_before = target.hp;
+    target.take_dmg(stats.attack);
+    target_hp_after = target.hp;
+    damage_dealt = target_hp_before - target_hp_after;
     return damage_dealt;
 }

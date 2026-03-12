@@ -8,19 +8,19 @@
 #include <string>
 #include <vector>
 
-BattleState::BattleState() {
-    pc.set_attack(2);
-    pc.set_defence(1);
-    pc.set_max_hp(10);
-    pc.set_hp(pc.get_stats().max_hp);
+BattleStatBattleState::BattleState() {
+    party.emplace_back();  // first PC for now
 
-    enemy.set_attack(4);
-    enemy.set_defence(1);
-    enemy.set_max_hp(10);
-    enemy.set_hp(enemy.get_stats().max_hp);
-}
+    party[0].stats.attack = 2;
+    party[0].stats.defence = 1;
+    party[0].stats.max_hp = 10;
+    party[0].hp = party[0].stats.max_hp;
 
-void BattleState::on_enter(Game&) {
+    enemy.stats.attack = 4;
+    enemy.stats.defence = 1;
+    enemy.stats.max_hp = 10;
+    enemy.hp = enemy.stats.max_hp;
+}ttleState::on_enter(Game&) {
     combat_log_.emplace_back("Woe, a fiend is upon ye!");
 }
 
@@ -85,10 +85,6 @@ void BattleState::handle_input(Game&, std::string_view input) {
             std::format("Your HP: {}/{}", pc.get_hp(), pc.get_stats().max_hp));
         status_display_.emplace_back(std::format(
             "Enemy HP: {}/{}", enemy.get_hp(), enemy.get_stats().max_hp));
-        action_menu_.emplace_back("Choose an action:\n1. attack\n2. flee\n");
-    }
-}
-
 void BattleState::clear_message_vectors() {
     combat_log_.clear();
     status_display_.clear();

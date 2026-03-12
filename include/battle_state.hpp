@@ -2,7 +2,7 @@
 
 #include "enemy.hpp"
 #include "game_state.hpp"
-#include "player_character.hpp"
+#include "party.hpp"
 #include <iostream>
 #include <print>
 #include <string>
@@ -10,7 +10,7 @@
 
 class BattleState final : public GameState {
   public:
-    PlayerCharacter pc = PlayerCharacter{};
+    Party party{};
     Enemy enemy = Enemy{};
     std::string line;
     bool in_battle = true;
