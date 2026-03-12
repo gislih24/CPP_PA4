@@ -19,6 +19,7 @@ void World::reset_new_game() {
             new_enemy_name, new_enemy_stats, new_enemy_stats.max_hp);
         enemies_.push_back(std::move(new_enemy));
     }
+    populate_overworld();
 }
 
 const PlayerCharacter& World::get_player() const noexcept {

@@ -21,7 +21,7 @@ class World {
     int defeated_enemies() const noexcept;
     void set_player_position(Position position) noexcept;
 
-  private:
+    //   private:
     PlayerCharacter player_;
     std::vector<std::unique_ptr<Enemy>> enemies_;
     std::vector<std::vector<Entity*>> overworld_occupants_;

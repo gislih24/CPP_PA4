@@ -13,7 +13,7 @@ class ExploreState final : public GameState {
     // Actions that occurred in combat,
     // e.g.: "player attacks for 7 damage", "enemy attacks for 4 damage",
     // "player has lost status effect: 2x damage"
-    std::vector<std::string> combat_log_ = {};
+    std::vector<std::string> overworld_map_ = {};
     // The current status of things,
     // e.g.: "enemy health: 7/15 HP" "player health: 9/12 HP".
     std::vector<std::string> status_display_ = {};
@@ -22,4 +22,5 @@ class ExploreState final : public GameState {
     std::vector<std::string> action_menu_ = {};
 
     void clear_message_vectors();
+    void build_map(const Game& game) const;
 };
