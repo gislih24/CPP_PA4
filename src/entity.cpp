@@ -1,4 +1,5 @@
 #include "./include/entity.hpp"
+#include <stdint.h>
 #include <string>
 #include <string_view>
 
@@ -45,12 +46,28 @@ bool Entity::is_alive() const {
 void Entity::set_max_hp(int value) {
     stats_.max_hp = value;
 }
+
 void Entity::set_attack(int value) {
     stats_.attack = value;
 }
+
 void Entity::set_defence(int value) {
     stats_.defence = value;
 }
+
 void Entity::set_hp(int value) {
     hp_ = value;
+}
+
+int_fast8_t Entity::get_x_pos() const {
+    return x_pos;
+}
+
+int_fast8_t Entity::get_y_pos() const {
+    return y_pos;
+}
+
+void Entity::set_position(int_fast8_t new_x_pos, int_fast8_t new_y_pos) {
+    x_pos = new_x_pos;
+    y_pos = new_y_pos;
 }
