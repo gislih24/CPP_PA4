@@ -59,8 +59,28 @@ void ExploreState::handle_input(Game& game, std::string_view input) {
         return;
     }
 
+    if (choice == "w" || choice == "W") {
+        move(game, Action::MOVE_UP);
+    }
+
+    if (choice == "a" || choice == "A") {
+        move(game, Action::MOVE_LEFT);
+    }
+
+    if (choice == "s" || choice == "S") {
+        move(game, Action::MOVE_DOWN);
+    }
+
+    if (choice == "d" || choice == "D") {
+        move(game, Action::MOVE_RIGHT);
+    }
+
     action_menu_.clear();
     action_menu_.emplace_back("Choose an action:\n1. battle\n2. quit\n");
+}
+
+void ExploreState::move([[maybe_unused]] Game& game, Action) {
+    auto the_x_pos = game.get_world().player_.get_x_pos()
 }
 
 void ExploreState::clear_message_vectors() {
