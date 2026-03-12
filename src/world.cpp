@@ -38,7 +38,7 @@ void World::populate_overworld() {
 }
 
 void World::move_entity(Entity* entity, int_fast8_t new_x_pos,
-                        int_fast8_t new_y_pos) {
+                        int_fast8_t new_y_pos) noexcept {
     // If the new position is out of bounds, return.
     if (new_x_pos < 0 || new_x_pos > WORLD_WIDTH || new_y_pos < 0 ||
         new_y_pos > WORLD_HEIGHT) {

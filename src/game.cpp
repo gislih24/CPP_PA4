@@ -1,6 +1,7 @@
 #include "./include/game.hpp"
 #include "./include/game_state.hpp"
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>

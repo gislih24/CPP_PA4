@@ -4,6 +4,7 @@
 #include "entity.hpp"
 #include "player_character.hpp"
 #include "stats.hpp"
+#include <memory>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -27,6 +28,6 @@ class World {
     std::vector<std::vector<Entity*>> overworld_occupants_;
 
     void populate_overworld();
-    void World::move_entity(Entity* entity, int_fast8_t new_x_pos,
-                            int_fast8_t new_y_pos);
+    void move_entity(Entity* entity, int_fast8_t new_x_pos,
+                     int_fast8_t new_y_pos) noexcept;
 };
