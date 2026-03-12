@@ -7,9 +7,10 @@ class Knight : public PlayerCharacter {
 };
 
 class Wizard : public PlayerCharacter {
-    
-};
-
-class Rogue : public PlayerCharacter {
-
+    void fireball() {
+        // damage all enemies
+    }
+    void heal() {
+        // heal target ally
+    }
 };
