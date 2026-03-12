@@ -8,5 +8,6 @@ class Enemy : public Entity {
     int target_hp_after = 0;
     int damage_dealt = 0;
 
+    Enemy(const std::string& name, const Stats& stats, int hp);
     virtual int attack(Entity& target);
 };
