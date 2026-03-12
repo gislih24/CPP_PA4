@@ -1,5 +1,6 @@
 #pragma once
 
+#include "player_character.hpp"
 #include <string>
 
 struct Position {
