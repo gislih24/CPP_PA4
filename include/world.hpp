@@ -16,6 +16,7 @@ struct Position {
 
 class World {
   public:
+    World();
     void reset_new_game();
     const PlayerCharacter& get_player() const noexcept;
     const std::vector<std::unique_ptr<Enemy>>& get_enemies() const noexcept;

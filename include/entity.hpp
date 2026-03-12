@@ -30,9 +30,9 @@ class Entity {
     void set_position(int_fast8_t new_x_pos, int_fast8_t new_y_pos) noexcept;
 
   private:
-    std::string name_;
-    Stats stats_;
-    int hp_;
-    int_fast8_t x_pos;
-    int_fast8_t y_pos;
+    std::string name_{};
+    Stats stats_{};
+    int hp_{};
+    int_fast8_t x_pos{};
+    int_fast8_t y_pos{};
 };

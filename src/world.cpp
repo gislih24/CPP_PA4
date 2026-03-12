@@ -3,20 +3,35 @@
 #include "./include/player_character.hpp"
 #include "./include/stats.hpp"
 #include <format>
+#include <inttypes.h>
 #include <memory>
 
-const int_fast8_t WORLD_HEIGHT = 9;
-const int_fast8_t WORLD_WIDTH = 9;
+namespace {
+constexpr int_fast8_t WORLD_HEIGHT = 9;
+constexpr int_fast8_t WORLD_WIDTH = 9;
+} // namespace
+
+World::World()
+    : player_("The Knight", Stats{0, 0, 0}, 0),
+      overworld_occupants_(WORLD_HEIGHT,
+                           std::vector<Entity*>(WORLD_WIDTH, nullptr)) {}
 
 void World::reset_new_game() {
+    enemies_.clear();
+    for (auto& row : overworld_occupants_) {
+        std::ranges::fill(row, nullptr);
+    }
+
     auto initial_stats = Stats{8, 10, 12};
     player_ =
         PlayerCharacter{"The Knight", initial_stats, initial_stats.max_hp};
-    for (int i = 0; i < 3; i++) {
+    player_.set_position(0, 0);
+    for (int_fast8_t i = 0; i < 3; i++) {
         std::string new_enemy_name = std::format("Silly Slime {}", i);
         auto new_enemy_stats = Stats{6 + i, 8 + i, 10 + i};
         auto new_enemy = std::make_unique<Enemy>(
             new_enemy_name, new_enemy_stats, new_enemy_stats.max_hp);
+        new_enemy->set_position(i + 1, i + 1);
         enemies_.push_back(std::move(new_enemy));
     }
     populate_overworld();
@@ -40,8 +55,8 @@ void World::populate_overworld() {
 void World::move_entity(Entity* entity, int_fast8_t new_x_pos,
                         int_fast8_t new_y_pos) noexcept {
     // If the new position is out of bounds, return.
-    if (new_x_pos < 0 || new_x_pos > ::WORLD_WIDTH || new_y_pos < 0 ||
-        new_y_pos > ::WORLD_HEIGHT) {
+    if (new_x_pos < 0 || new_x_pos >= WORLD_WIDTH || new_y_pos < 0 ||
+        new_y_pos >= WORLD_HEIGHT) {
         return;
     }
 
@@ -52,5 +67,4 @@ void World::move_entity(Entity* entity, int_fast8_t new_x_pos,
 
     // Move the entity to the new position.
     overworld_occupants_[new_x_pos][new_y_pos] = entity;
-    return;
 }

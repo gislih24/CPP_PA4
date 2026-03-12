@@ -10,8 +10,8 @@
 
 class BattleState final : public GameState {
   public:
-    PlayerCharacter pc = PlayerCharacter{};
-    Enemy enemy = Enemy{};
+    PlayerCharacter pc;
+    Enemy enemy;
     std::string line;
     bool in_battle = true;
     int damage_dealt = 0;

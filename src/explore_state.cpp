@@ -1,8 +1,11 @@
 #include "./include/explore_state.hpp"
+#include "./include/battle_state.hpp"
 #include "./include/game.hpp"
+#include <memory>
 #include <print>
 
-void ExploreState::on_enter(Game& game) override {
+void ExploreState::on_enter(Game&) {
+    clear_message_vectors();
     status_display_.emplace_back(
         "Against all the evil that Hell can conjure, all the wickedness\n ");
     status_display_.emplace_back(
@@ -11,6 +14,7 @@ void ExploreState::on_enter(Game& game) override {
 }
 
 void ExploreState::render(const Game& game) const {
+    build_map(game);
     // For each of the message vectors
     for (const auto* message_vector :
          {&overworld_map_, &status_display_, &action_menu_}) {
@@ -19,7 +23,6 @@ void ExploreState::render(const Game& game) const {
             std::print("{}", message); // Print it
         }
     }
-    build_map(game);
 }
 
 void ExploreState::build_map(const Game& game) const {
@@ -39,12 +42,32 @@ void ExploreState::build_map(const Game& game) const {
                 new_row_string += '!';
             }
         }
+        std::print("{}\n", new_row_string);
     }
 }
 
-// void ExploreState::handle_input(Game& game, std::string_view input)
-// override
-// {}
+void ExploreState::handle_input(Game& game, std::string_view input) {
+    const std::string choice = normalize_input(input);
+
+    if (choice == "battle" || choice == "fight" || choice == "1") {
+        game.request_state_change(std::make_unique<BattleState>());
+        return;
+    }
+
+    if (choice == "quit" || choice == "exit") {
+        game.quit();
+        return;
+    }
+
+    action_menu_.clear();
+    action_menu_.emplace_back("Choose an action:\n1. battle\n2. quit\n");
+}
+
+void ExploreState::clear_message_vectors() {
+    overworld_map_.clear();
+    status_display_.clear();
+    action_menu_.clear();
+}
 /*
 𖨆
 𖠋

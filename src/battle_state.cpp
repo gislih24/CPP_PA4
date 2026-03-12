@@ -8,17 +8,9 @@
 #include <string>
 #include <vector>
 
-BattleState::BattleState() {
-    pc.set_attack(2);
-    pc.set_defence(1);
-    pc.set_max_hp(10);
-    pc.set_hp(pc.get_stats().max_hp);
-
-    enemy.set_attack(4);
-    enemy.set_defence(1);
-    enemy.set_max_hp(10);
-    enemy.set_hp(enemy.get_stats().max_hp);
-}
+BattleState::BattleState()
+    : pc("The Knight", Stats{10, 2, 1}, 10),
+      enemy("Fiend", Stats{10, 4, 1}, 10) {}
 
 void BattleState::on_enter(Game&) {
     combat_log_.emplace_back("Woe, a fiend is upon ye!");
