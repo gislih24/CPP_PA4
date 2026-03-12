@@ -9,6 +9,7 @@ class Knight : public PlayerCharacter {
 
 class Wizard : public PlayerCharacter {
 	public:
-		void fireball();
-		void heal();
+		int fireball(Entity& target);
+		// Heals the chosen party member
+		void healing_touch(PlayerCharacter& target);
 };

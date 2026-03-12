@@ -4,7 +4,6 @@
 #include "game_state.hpp"
 #include "party.hpp"
 #include <iostream>
-#include <print>
 #include <string>
 #include <vector>
 
@@ -15,6 +14,11 @@ class BattleState final : public GameState {
     std::string line;
     bool in_battle = true;
     int damage_dealt = 0;
+    // True while Knight's shield_brace buff is active; removed at the
+    // start of the next player turn.
+    bool shield_brace_active = false;
+    // Index of the party member whose turn it is.
+    std::size_t current_actor_index = 0;
 
     BattleState();
     void on_enter(Game& game) override;
