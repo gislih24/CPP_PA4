@@ -4,23 +4,29 @@
 #include "./include/player_character.hpp"
 #include <format>
 #include <iostream>
+#include <memory>
 #include <print>
 #include <string>
 #include <vector>
 
-BattleStatBattleState::BattleState() {
-    party.emplace_back();  // first PC for now
+BattleState::BattleState() {
+    party.add_member(std::make_unique<PlayerCharacter>());
 
-    party[0].stats.attack = 2;
-    party[0].stats.defence = 1;
-    party[0].stats.max_hp = 10;
-    party[0].hp = party[0].stats.max_hp;
+    if (!party.members().empty()) {
+        auto& pc = *party.members().front();
+        pc.set_attack(2);
+        pc.set_defence(1);
+        pc.set_max_hp(10);
+        pc.set_hp(10);
+    }
 
-    enemy.stats.attack = 4;
-    enemy.stats.defence = 1;
-    enemy.stats.max_hp = 10;
-    enemy.hp = enemy.stats.max_hp;
-}ttleState::on_enter(Game&) {
+    enemy.set_attack(4);
+    enemy.set_defence(1);
+    enemy.set_max_hp(10);
+    enemy.set_hp(10);
+}
+
+void BattleState::on_enter(Game&) {
     combat_log_.emplace_back("Woe, a fiend is upon ye!");
 }
 
@@ -39,6 +45,14 @@ void BattleState::handle_input(Game&, std::string_view input) {
     const std::string choice = normalize_input(input);
 
     clear_message_vectors();
+
+    if (party.members().empty()) {
+        in_battle = false;
+        combat_log_.emplace_back("Your party is empty.\n");
+        return;
+    }
+
+    auto& pc = *party.members().front();
 
     // If for some reason the battle started, but it's already over.
     if (!in_battle || !pc.is_alive() || !enemy.is_alive()) {
@@ -85,6 +99,10 @@ void BattleState::handle_input(Game&, std::string_view input) {
             std::format("Your HP: {}/{}", pc.get_hp(), pc.get_stats().max_hp));
         status_display_.emplace_back(std::format(
             "Enemy HP: {}/{}", enemy.get_hp(), enemy.get_stats().max_hp));
+        action_menu_.emplace_back("Choose an action:\n1. attack\n2. flee\n");
+    }
+}
+
 void BattleState::clear_message_vectors() {
     combat_log_.clear();
     status_display_.clear();
