@@ -27,11 +27,14 @@ void ExploreState::build_map(const Game& game) const {
         std::string new_row_string;
         for (const auto& tile : row) {
             if (tile == nullptr) {
-                new_row_string += '𖠰';
+                // new_row_string += '𖠰';
+                new_row_string += '*';
             } else if (dynamic_cast<PlayerCharacter*>(tile)) {
-                new_row_string += '𖨆';
+                // new_row_string += '𖨆';
+                new_row_string += '@';
             } else if (dynamic_cast<Enemy*>(tile)) {
-                new_row_string += '𖢥';
+                // new_row_string += '𖢥';
+                new_row_string += '#';
             } else {
                 new_row_string += '!';
             }
