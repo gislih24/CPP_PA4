@@ -6,6 +6,9 @@
 
 class Entity {
   public:
+    Entity(std::string_view name, const Stats& stats, int hp);
+    Entity() = default;
+
     std::string_view get_name() const;
     int get_hp() const;
     const Stats& get_stats() const;
