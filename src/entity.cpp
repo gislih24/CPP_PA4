@@ -2,9 +2,11 @@
 #include <string>
 #include <string_view>
 
+Entity::Entity(std::string_view name, const Stats& stats, int hp)
+    : name_(name), stats_(stats), hp_(hp) {}
+
 std::string_view Entity::get_name() const {
-    std::string_view the_name = name_;
-    return the_name;
+    return name_;
 }
 
 int Entity::get_hp() const {
