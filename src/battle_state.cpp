@@ -1,4 +1,5 @@
 #include "./include/battle_state.hpp"
+#include "./include/character_classes.hpp"
 #include "./include/enemy.hpp"
 #include "./include/game_state.hpp"
 #include "./include/player_character.hpp"
@@ -10,15 +11,20 @@
 #include <vector>
 
 BattleState::BattleState() {
-    party.add_member(std::make_unique<PlayerCharacter>());
+    party.add_member(std::make_unique<Knight>());
+    party.add_member(std::make_unique<Wizard>());
+    //set stats for each party member
+    party.members()[0]->set_attack(3);
+    party.members()[0]->set_defence(2);
+    party.members()[0]->set_max_hp(14);
+    party.members()[0]->set_hp(14);
+    
+    party.members()[1]->set_attack(5);
+    party.members()[1]->set_defence(0);
+    party.members()[1]->set_max_hp(8);
+    party.members()[1]->set_hp(8);
 
-    if (!party.members().empty()) {
-        auto& pc = *party.members().front();
-        pc.set_attack(2);
-        pc.set_defence(1);
-        pc.set_max_hp(10);
-        pc.set_hp(10);
-    }
+    
 
     enemy.set_attack(4);
     enemy.set_defence(1);
