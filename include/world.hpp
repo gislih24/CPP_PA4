@@ -1,8 +1,10 @@
 #pragma once
 
+#include "enemy.hpp"
 #include "player_character.hpp"
 #include "stats.hpp"
 #include <string>
+#include <vector>
 
 struct Position {
     int row{};
@@ -11,7 +13,6 @@ struct Position {
 
 class World {
   public:
-    // TODO: All of this is temporary until Player is implemented.
     void reset_new_game() const;
     const PlayerCharacter& get_player() const noexcept;
     int defeated_enemies() const noexcept;
@@ -19,4 +20,5 @@ class World {
 
   private:
     PlayerCharacter player_;
+    std::vector<Enemy> enemies_;
 };
