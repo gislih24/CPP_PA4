@@ -1,5 +1,8 @@
 #include "./include/enemy.hpp"
 
+Enemy::Enemy(const std::string& name, const Stats& stats, int hp)
+    : Entity(name, stats, hp) {}
+
 int Enemy::attack(Entity& target) {
     target_hp_before = target.get_hp();
     target.take_dmg(get_stats().attack);
