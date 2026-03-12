@@ -38,14 +38,18 @@ void World::populate_overworld() {
 
 void World::move_entity(Entity* entity, int_fast8_t new_x_pos,
                         int_fast8_t new_y_pos) {
+    // If the new position is out of bounds, return.
     if (new_x_pos < 0 || new_x_pos > WORLD_WIDTH || new_y_pos < 0 ||
         new_y_pos > WORLD_HEIGHT) {
         return;
     }
 
+    // If the tile isn't empty, return.
     if (overworld_occupants_[new_x_pos][new_y_pos] != nullptr) {
         return;
     }
 
+    // Move the entity to the new position.
     overworld_occupants_[new_x_pos][new_y_pos] = entity;
+    return;
 }
