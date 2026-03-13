@@ -38,6 +38,8 @@ void BattleState::render(const Game&) const {
             std::print("{}", message); // Print it
         }
     }
+
+    std::cout << std::flush;
 }
 
 void BattleState::handle_input(Game&, std::string_view input) {
