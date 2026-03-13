@@ -154,7 +154,7 @@ void BattleState::handle_input(Game& game, std::string_view input) {
     }
 
     if (awaiting_heal_target_) {
-        auto* wizard = dynamic_cast<Wizard*>(actor);
+        auto const* wizard = dynamic_cast<Wizard*>(actor);
         if (wizard == nullptr) {
             awaiting_heal_target_ = false;
             rebuild_status();
@@ -175,26 +175,35 @@ void BattleState::handle_input(Game& game, std::string_view input) {
 
         int selected_index = -1;
         try {
-            selected_index = std::stoi(choice);
-        } catch (const std::invalid_argument&) {
+            selected_index = std::stoi(std::string(choice));
+        } catch (const std::exception&) {
             selected_index = -1;
         }
 
-        if (selected_index <= 0 ||
-            static_cast<std::size_t>(selected_index) > members.size() ||
-            members[static_cast<std::size_t>(selected_index) - 1] == nullptr ||
-            !members[static_cast<std::size_t>(selected_index) - 1]
-                 ->is_alive()) {
+        if (std::size_t member_count = members.size();
+            selected_index < 1 ||
+            static_cast<std::size_t>(selected_index) > member_count) {
             combat_log_.emplace_back("Invalid ally selection.\n");
             rebuild_status();
             return;
         }
 
-        auto& target = *members[static_cast<std::size_t>(selected_index) - 1];
+        auto const& maybe_target =
+            members[static_cast<std::size_t>(selected_index) - 1];
+        if (maybe_target == nullptr || !maybe_target->is_alive()) {
+            combat_log_.emplace_back("Invalid ally selection.\n");
+            rebuild_status();
+            return;
+        }
+
+        auto& target = *maybe_target;
+        int before_hp = target.get_hp();
         wizard->healing_touch(target);
+        int after_hp = target.get_hp();
         awaiting_heal_target_ = false;
         combat_log_.emplace_back(std::format(
-            "Wizard casts healing touch on {}.\n", role_label(target)));
+            "Wizard casts healing touch on {} ({}), +{} HP.\n",
+            role_label(target), target.get_name(), after_hp - before_hp));
         sync_party_leader(game);
     } else {
         if (choice.empty()) {
@@ -401,7 +410,7 @@ void BattleState::rebuild_status() {
             if (actor != nullptr) {
                 const auto [ability_1, ability_2] = role_abilities(*actor);
                 action_menu_.emplace_back(
-                    std::format("{}'s turn. Choose an action:\n1. attack\n2. "
+                    std::format("\n{}'s turn. Choose an action:\n1. attack\n2. "
                                 "{}\n3. {}\n0. flee\n",
                                 role_label(*actor), ability_1, ability_2));
             } else {
