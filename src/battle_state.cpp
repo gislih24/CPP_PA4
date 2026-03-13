@@ -116,3 +116,24 @@ void BattleState::rebuild_status(const Game& game) {
 
     action_menu_.emplace_back("> ");
 }
+
+void BattleState::leave_battle(Game& game) {
+    switch (outcome_) {
+    case Outcome::Victory: {
+        game.get_world().remove_enemy(enemy_);
+        game.get_world().set_player_position(encounter_position_);
+        game.request_state_change(std::make_unique<ExploreState>(
+            std::format("You defeated {}.", enemy_name_)));
+        return;
+    }
+    case Outcome::Fled:
+        game.request_state_change(std::make_unique<ExploreState>(
+            "You retreat to your previous tile."));
+        return;
+    case Outcome::Defeat:
+        game.quit();
+        return;
+    case Outcome::Ongoing:
+        return;
+    }
+}

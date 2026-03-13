@@ -36,4 +36,5 @@ class BattleState final : public GameState {
 
     void clear_message_vectors();
     void rebuild_status(const Game& game);
+    void leave_battle(Game& game);
 };
