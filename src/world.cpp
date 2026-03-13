@@ -7,8 +7,8 @@
 #include <memory>
 
 namespace {
-constexpr int_fast8_t WORLD_HEIGHT = 9;
-constexpr int_fast8_t WORLD_WIDTH = 9;
+constexpr int WORLD_HEIGHT = 5;
+constexpr int WORLD_WIDTH = 5;
 } // namespace
 
 World::World()
@@ -26,7 +26,7 @@ void World::reset_new_game() {
     player_ =
         PlayerCharacter{"The Knight", initial_stats, initial_stats.max_hp};
     player_.set_position(0, 0);
-    for (int_fast8_t i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) {
         std::string new_enemy_name = std::format("Silly Slime {}", i);
         auto new_enemy_stats = Stats{6 + i, 8 + i, 10 + i};
         auto new_enemy = std::make_unique<Enemy>(
@@ -52,8 +52,7 @@ void World::populate_overworld() {
     }
 }
 
-void World::move_entity(Entity* entity, int_fast8_t new_x_pos,
-                        int_fast8_t new_y_pos) noexcept {
+void World::move_entity(Entity* entity, int new_x_pos, int new_y_pos) noexcept {
     // If the new position is out of bounds, return.
     if (new_x_pos < 0 || new_x_pos >= WORLD_WIDTH || new_y_pos < 0 ||
         new_y_pos >= WORLD_HEIGHT) {

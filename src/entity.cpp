@@ -59,15 +59,15 @@ void Entity::set_hp(int value) noexcept {
     hp_ = value;
 }
 
-int_fast8_t Entity::get_x_pos() const noexcept {
+int Entity::get_x_pos() const noexcept {
     return x_pos;
 }
 
-int_fast8_t Entity::get_y_pos() const noexcept {
+int Entity::get_y_pos() const noexcept {
     return y_pos;
 }
 
-void Entity::set_position(int_fast8_t new_x_pos, int_fast8_t new_y_pos) noexcept {
+void Entity::set_position(int new_x_pos, int new_y_pos) noexcept {
     x_pos = new_x_pos;
     y_pos = new_y_pos;
 }
