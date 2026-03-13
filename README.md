@@ -29,6 +29,12 @@ inheritance in two places:
 - Your saves are stored in the `saves/` folder.
 
 ### Build and run
+
+**Requirements**
+
+- A C++23-capable compiler.
+- `make` and a POSIX-like shell environment (e.g., Linux).
+
 Use the provided Makefile:
 
 ```bash
@@ -44,6 +50,8 @@ make clean
 ```
 
 The produced executable `jrpg` can be found in the `/bin` folder.
+
+Tested on Ubuntu 22.04 (WSL2) with `g++-14`.
 
 ### Main menu controls
 
@@ -79,7 +87,8 @@ Exploration commands:
 
 Save names are sanitized into lowercase file names inside `saves/`. For
 example, `SAVE My Slot` creates a file called `my_slot.txt` in the `saves/`
-folder.
+folder. You can delete files in `saves/` to remove save slots; the folder
+itself is expected to exist.
 
 ### Battle rules
 
@@ -210,14 +219,14 @@ This codebase is set up to be extended in a few straightforward ways:
 
 - Add a new player class by deriving from `PlayerCharacter`, then update the
   role/ability dispatch helpers in
-  [`src/battle_state.cpp`](/home/ghrafn/my_cpp_code/CPP_PA4/src/battle_state.cpp).
+  [src/battle_state.cpp](src/battle_state.cpp).
 - Add more game screens by deriving from `GameState` and requesting transitions
   through `Game`.
 - Add more overworld content by extending `World::reset_new_game()` and
   `World::try_move_player(...)`.
 - Add richer combat systems by expanding `Stats`, `Entity`, and `BattleState`.
 - Add more persistent data by extending the save/load format in
-  [`src/world.cpp`](/home/ghrafn/my_cpp_code/CPP_PA4/src/world.cpp).
+  [src/world.cpp](src/world.cpp).
 
 ### Features added *beyond* a minimal duel
 
