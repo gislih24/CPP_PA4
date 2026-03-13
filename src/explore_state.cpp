@@ -22,8 +22,7 @@ void ExploreState::on_enter(Game& game) {
     rebuild_ui(game);
 }
 
-void ExploreState::render(const Game& game) const {
-    build_map(game);
+void ExploreState::render(const Game&) const {
     // For each of the message vectors
     for (const auto* message_vector :
          {&overworld_map_, &status_display_, &action_menu_}) {
@@ -32,38 +31,51 @@ void ExploreState::render(const Game& game) const {
             std::print("{}", message); // Print it
         }
     }
+
+    std::cout << std::flush;
 }
 
-void ExploreState::build_map(const Game& game) const {
-    for (const auto& row : game.get_world().overworld_occupants_) {
+void ExploreState::build_map(const Game& game) {
+    overworld_map_.clear();
+    overworld_map_.emplace_back("\nOverworld\n");
+
+    const auto& overworld = game.get_world().get_overworld_occupants();
+    std::string header_line = "  ";
+    if (!overworld.empty()) {
+        for (std::size_t col = 0; col < overworld.front().size(); ++col) {
+            header_line += std::to_string(col);
+            header_line += ' ';
+        }
+    }
+    header_line += '\n';
+    overworld_map_.push_back(std::move(header_line));
+
+    int row_index = 0;
+    for (const auto& row : overworld) {
         std::string new_row_string;
+        new_row_string += std::to_string(row_index);
+        new_row_string += ' ';
         for (const auto& tile : row) {
             if (tile == nullptr) {
-                // new_row_string += '𖠰';
-                new_row_string += '*';
+                new_row_string += ". ";
             } else if (dynamic_cast<PlayerCharacter*>(tile)) {
-                // new_row_string += '𖨆';
-                new_row_string += '@';
+                new_row_string += "@ ";
             } else if (dynamic_cast<Enemy*>(tile)) {
-                // new_row_string += '𖢥';
-                new_row_string += '#';
+                new_row_string += "# ";
             } else {
-                new_row_string += '!';
+                new_row_string += "? "; // Something went terribly wrong...
             }
         }
-        std::print("{}\n", new_row_string);
+        new_row_string += '\n';
+        overworld_map_.push_back(std::move(new_row_string));
+        ++row_index;
     }
 }
 
 void ExploreState::handle_input(Game& game, std::string_view input) {
     const std::string choice = normalize_input(input);
 
-    if (choice == "battle" || choice == "fight" || choice == "1") {
-        game.request_state_change(std::make_unique<BattleState>());
-        return;
-    }
-
-    if (choice == "quit" || choice == "exit") {
+    if (choice == "quit" || choice == "exit" || choice == "q") {
         game.quit();
         return;
     }
