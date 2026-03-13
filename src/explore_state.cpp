@@ -80,24 +80,28 @@ void ExploreState::handle_input(Game& game, std::string_view input) {
         return;
     }
 
-    if (choice == "w" || choice == "W") {
+    if (choice == "w") {
         move(game, Action::MOVE_UP);
+        return;
     }
 
-    if (choice == "a" || choice == "A") {
+    if (choice == "a") {
         move(game, Action::MOVE_LEFT);
+        return;
     }
 
-    if (choice == "s" || choice == "S") {
+    if (choice == "s") {
         move(game, Action::MOVE_DOWN);
+        return;
     }
 
-    if (choice == "d" || choice == "D") {
+    if (choice == "d") {
         move(game, Action::MOVE_RIGHT);
+        return;
     }
 
-    action_menu_.clear();
-    action_menu_.emplace_back("Choose an action:\n1. battle\n2. quit\n");
+    status_message_ = "Use W/A/S/D to move or Q to quit.";
+    rebuild_ui(game);
 }
 
 void ExploreState::move([[maybe_unused]] Game& game, Action) {
