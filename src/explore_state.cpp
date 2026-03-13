@@ -3,14 +3,23 @@
 #include "./include/game.hpp"
 #include <memory>
 #include <print>
+#include <utility>
 
-void ExploreState::on_enter(Game&) {
-    clear_message_vectors();
-    status_display_.emplace_back(
-        "Against all the evil that Hell can conjure, all the wickedness\n ");
-    status_display_.emplace_back(
-        "that mankind can produce, we will send unto them... only you.\n");
-    status_display_.emplace_back("Rip and tear, until it is done.\n");
+ExploreState::ExploreState(std::string status_message)
+    : status_message_(std::move(status_message)) {}
+
+void ExploreState::on_enter(Game& game) {
+    if (status_message_.empty()) {
+        if (game.get_world().get_enemies().empty()) {
+            status_message_ = "The overworld is clear. No enemies remain... I"
+                              "hope you're happy.";
+        } else {
+            status_message_ = "Move with W/A/S/D. Step onto '#' to face a foe "
+                              "and start a battle!";
+        }
+    }
+
+    rebuild_ui(game);
 }
 
 void ExploreState::render(const Game& game) const {
