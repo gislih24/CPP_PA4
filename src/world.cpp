@@ -143,17 +143,23 @@ void World::populate_overworld() {
 }
 
 void World::move_entity(Entity* entity, int new_x_pos, int new_y_pos) noexcept {
+    if (entity == nullptr) {
+        return;
+    }
+
     // If the new position is out of bounds, return.
-    if (new_x_pos < 0 || new_x_pos >= WORLD_WIDTH || new_y_pos < 0 ||
-        new_y_pos >= WORLD_HEIGHT) {
+    if (!is_in_bounds({new_x_pos, new_y_pos})) {
         return;
     }
 
     // If the tile isn't empty, return.
-    if (overworld_occupants_[new_x_pos][new_y_pos] != nullptr) {
+    if (overworld_occupants_[to_index(new_x_pos)][to_index(new_y_pos)] !=
+        nullptr) {
         return;
     }
 
     // Move the entity to the new position.
-    overworld_occupants_[new_x_pos][new_y_pos] = entity;
+    set_tile({new_x_pos, new_y_pos}, entity);
+    entity->set_position(new_x_pos, new_y_pos);
+}
 }
