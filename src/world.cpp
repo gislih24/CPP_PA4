@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <random>
 
 namespace {
 constexpr int WORLD_HEIGHT = 5;
@@ -38,18 +39,79 @@ void World::reset_new_game() {
         std::ranges::fill(row, nullptr);
     }
 
-    auto initial_stats = Stats{20, 6, 2};
+    auto initial_stats = Stats{15, 6, 2};
     player_ =
         PlayerCharacter{"The Knight", initial_stats, initial_stats.max_hp};
     player_.set_position(0, 0);
-    for (int i = 0; i < 3; i++) {
-        std::string new_enemy_name = std::format("Silly Slime {}", i);
-        auto new_enemy_stats = Stats{6 + (i * 2), 3 + i, 1 + i};
-        auto new_enemy = std::make_unique<Enemy>(
-            new_enemy_name, new_enemy_stats, new_enemy_stats.max_hp);
-        new_enemy->set_position(i + 1, i + 1);
-        enemies_.push_back(std::move(new_enemy));
+
+    std::mt19937 rng(std::random_device{}());            // create once
+    std::uniform_int_distribution<int> dist_count(3, 5); // how many enemies
+
+    int x = dist_count(rng);                             // 3–5
+    int silly_slime_count = 0;
+    int evil_skeleton_count = 0;
+    int three_gnomes_in_a_trenchcoat_count = 0;
+
+    std::uniform_int_distribution<int> dist_kind(1, 3);  // which kind of enemy
+    std::uniform_int_distribution<int> dist_row(0, WORLD_HEIGHT - 1);
+    std::uniform_int_distribution<int> dist_col(0, WORLD_WIDTH - 1);
+
+    // Track occupied tiles so each enemy gets a unique position and never
+    // starts on the player's tile.
+    std::vector<Position> occupied_tiles;
+    occupied_tiles.push_back(
+        Position{player_.get_x_pos(), player_.get_y_pos()});
+
+    for (int i = 0; i < x; ++i) {
+        int kind = dist_kind(rng);
+
+        // Find a free random tile.
+        int row = 0;
+        int col = 0;
+        while (true) {
+            row = dist_row(rng);
+            col = dist_col(rng);
+
+            bool taken = false;
+            for (const auto& pos : occupied_tiles) {
+                if (pos.row == row && pos.col == col) {
+                    taken = true;
+                    break;
+                }
+            }
+            if (!taken) {
+                break;
+            }
+        }
+        if (kind == 1) {
+            std::string new_enemy_name = std::format("Silly Slime {}", silly_slime_count);
+            ++silly_slime_count;
+            auto new_enemy_stats = Stats{40 + i, 3 + i, 1 + i}; // index added to stats for variability
+            auto new_enemy = std::make_unique<Enemy>(
+                new_enemy_name, new_enemy_stats, new_enemy_stats.max_hp);
+            new_enemy->set_position(row, col);
+            enemies_.push_back(std::move(new_enemy));
+        } else if (kind == 2) {
+            std::string new_enemy_name = std::format("Evil Skeleton {}", evil_skeleton_count);
+            ++evil_skeleton_count;
+            auto new_enemy_stats = Stats{20 + i, 4 + i, 0 + i}; // index added to stats for variability
+            auto new_enemy = std::make_unique<Enemy>(
+                new_enemy_name, new_enemy_stats, new_enemy_stats.max_hp);
+            new_enemy->set_position(row, col);
+            enemies_.push_back(std::move(new_enemy));
+        } else { // kind == 3
+            std::string new_enemy_name = std::format("Three Gnomes in a Trenchcoat {}", three_gnomes_in_a_trenchcoat_count);
+            ++three_gnomes_in_a_trenchcoat_count;
+            auto new_enemy_stats = Stats{30 + i, 3 + i, 2 + i}; // index added to stats for variability
+            auto new_enemy = std::make_unique<Enemy>(
+                new_enemy_name, new_enemy_stats, new_enemy_stats.max_hp);
+            new_enemy->set_position(row, col);
+            enemies_.push_back(std::move(new_enemy));
+        }
+
+        occupied_tiles.push_back(Position{row, col});
     }
+
     populate_overworld();
 }
 
