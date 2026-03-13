@@ -11,12 +11,12 @@ void Knight::shield_brace() noexcept {
 
 Wizard::Wizard() : PlayerCharacter("Wizard", Stats{8, 5, 0}, 8) {}
 
-int Wizard::fireball(Entity& target) noexcept {
+int Wizard::fireball(Entity& target) const noexcept {
     const int damage = get_stats().attack * 2;
     target.take_dmg(damage);
     return damage;
 }
 
-void Wizard::healing_touch(PlayerCharacter& target) noexcept {
+void Wizard::healing_touch(PlayerCharacter& target) const noexcept {
     target.heal(3);
 }
