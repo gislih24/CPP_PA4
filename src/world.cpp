@@ -6,6 +6,7 @@
 #include <format>
 #include <inttypes.h>
 #include <memory>
+#include <ranges>
 
 namespace {
 constexpr int WORLD_HEIGHT = 5;
@@ -21,6 +22,13 @@ World::World()
       overworld_occupants_(WORLD_HEIGHT,
                            std::vector<Entity*>(WORLD_WIDTH, nullptr)) {}
 
+/**
+ * @brief Resets the world to its initial state for a new game.
+ *
+ * This includes clearing defeated enemies count, resetting the player and
+ * enemies to their initial stats and positions, and repopulating the overworld
+ * with the player and enemies.
+ */
 void World::reset_new_game() {
     defeated_enemies_ = 0;
     enemies_.clear();
@@ -42,7 +50,7 @@ void World::reset_new_game() {
     }
     populate_overworld();
 }
-
+/* ---------------------------------Getters--------------------------------- */
 PlayerCharacter& World::get_player() noexcept {
     return player_;
 }
@@ -64,6 +72,14 @@ int World::defeated_enemies() const noexcept {
     return defeated_enemies_;
 }
 
+/**
+ * @brief Attempts to move the player by the specified row and column changes.
+ * @param row_change The change in the player's row position (positive for
+ * down, negative for up).
+ * @param col_change The change in the player's column position (positive for
+ * down, negative for up).
+ * @return A MoveOutcome struct indicating the result of the move attempt.
+ */
 MoveOutcome World::try_move_player(int row_change, int col_change) noexcept {
     const Position current{player_.get_x_pos(), player_.get_y_pos()};
     const Position destination{
@@ -96,6 +112,11 @@ MoveOutcome World::try_move_player(int row_change, int col_change) noexcept {
             .enemy = nullptr};
 }
 
+/**
+ * @brief Sets the player's position to the specified coordinates if the move
+ * is valid.
+ * @param position The new position to set for the player.
+ */
 void World::set_player_position(Position position) noexcept {
     if (!is_in_bounds(position)) {
         return;
@@ -115,6 +136,13 @@ void World::set_player_position(Position position) noexcept {
     player_.set_position(int(position.row), int(position.col));
 }
 
+/**
+ * @brief Removes the specified enemy from the world if it exists, and updates
+ * the defeated enemies count accordingly.
+ * @param enemy A pointer to the enemy to be removed.
+ * @return True if the enemy was successfully removed, false if the enemy was
+ * not found or the pointer was null.
+ */
 bool World::remove_enemy(Enemy const* enemy) noexcept {
     if (enemy == nullptr) {
         return false;
@@ -151,6 +179,13 @@ void World::populate_overworld() {
     }
 }
 
+/**
+ * @brief Moves the specified entity to the new coordinates if the move is
+ * valid.
+ * @param entity A pointer to the entity to be moved.
+ * @param new_x_pos The new x-coordinate for the entity.
+ * @param new_y_pos The new y-coordinate for the entity.
+ */
 void World::move_entity(Entity* entity, int new_x_pos, int new_y_pos) noexcept {
     if (entity == nullptr) {
         return;
@@ -172,11 +207,22 @@ void World::move_entity(Entity* entity, int new_x_pos, int new_y_pos) noexcept {
     entity->set_position(new_x_pos, new_y_pos);
 }
 
+/**
+ * @brief Checks if the specified position is within the bounds of the world.
+ * @param position The position to check for bounds.
+ * @return True if the position is within bounds, false otherwise.
+ */
 bool World::is_in_bounds(Position position) const noexcept {
     return position.row >= 0 && position.row < WORLD_HEIGHT &&
            position.col >= 0 && position.col < WORLD_WIDTH;
 }
 
+/**
+ * @brief Gets the entity occupying the specified position.
+ * @param position The position to check.
+ * @return A pointer to the entity occupying the position, or nullptr if the
+ * tile is empty.
+ */
 Entity* World::get_occupant_at(Position position) const noexcept {
     if (!is_in_bounds(position)) {
         return nullptr;
@@ -185,6 +231,11 @@ Entity* World::get_occupant_at(Position position) const noexcept {
     return overworld_occupants_[to_index(position.row)][to_index(position.col)];
 }
 
+/**
+ * @brief Clears the tile at the specified position by setting it to nullptr,
+ * effectively removing any entity that was occupying that tile.
+ * @param position The position of the tile to clear.
+ */
 void World::clear_tile(Position position) noexcept {
     if (!is_in_bounds(position)) {
         return;
@@ -194,6 +245,12 @@ void World::clear_tile(Position position) noexcept {
         nullptr;
 }
 
+/**
+ * @brief Sets the overworld tile at the specified position to point to the
+ * given entity.
+ * @param position The position of the tile to set.
+ * @param entity A pointer to the entity to "place" on the tile.
+ */
 void World::set_tile(Position position, Entity* entity) noexcept {
     if (!is_in_bounds(position)) {
         return;
