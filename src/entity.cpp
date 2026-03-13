@@ -1,7 +1,4 @@
 #include "./include/entity.hpp"
-#include <stdint.h>
-#include <string>
-#include <string_view>
 
 Entity::Entity(std::string_view name, const Stats& stats, int hp)
     : name_(name), stats_(stats), hp_(hp) {}

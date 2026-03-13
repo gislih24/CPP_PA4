@@ -1,12 +1,10 @@
 #include "./include/battle_state.hpp"
-#include "./include/enemy.hpp"
-#include "./include/game_state.hpp"
-#include "./include/player_character.hpp"
+#include "./include/explore_state.hpp"
+#include "./include/game.hpp"
 #include <format>
 #include <iostream>
+#include <memory>
 #include <print>
-#include <string>
-#include <vector>
 
 BattleState::BattleState()
     : pc("The Knight", Stats{10, 2, 1}, 10),

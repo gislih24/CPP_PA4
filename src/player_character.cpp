@@ -1,5 +1,4 @@
 #include "./include/player_character.hpp"
-#include "./include/entity.hpp"
 
 PlayerCharacter::PlayerCharacter(const std::string& name, const Stats& stats,
                                  int hp)

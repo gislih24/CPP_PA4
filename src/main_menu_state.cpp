@@ -1,11 +1,8 @@
 #include "./include/main_menu_state.hpp"
 #include "./include/explore_state.hpp"
 #include "./include/game.hpp"
-#include <cctype>
 #include <iostream>
 #include <memory>
-#include <string>
-#include <string_view>
 
 void MainMenuState::on_enter(Game&) {
     message_ = "Choose an option.";

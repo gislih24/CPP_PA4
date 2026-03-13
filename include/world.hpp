@@ -3,9 +3,7 @@
 #include "enemy.hpp"
 #include "entity.hpp"
 #include "player_character.hpp"
-#include "stats.hpp"
 #include <memory>
-#include <string>
 #include <vector>
 
 struct Position {

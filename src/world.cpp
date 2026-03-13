@@ -1,10 +1,6 @@
 #include "./include/world.hpp"
-#include "./include/enemy.hpp"
-#include "./include/player_character.hpp"
-#include "./include/stats.hpp"
 #include <algorithm>
 #include <format>
-#include <inttypes.h>
 #include <memory>
 #include <ranges>
 
