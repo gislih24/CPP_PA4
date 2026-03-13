@@ -90,7 +90,7 @@ void World::reset_new_game() {
         if (kind == 1) {
             std::string new_enemy_name = std::format("Silly Slime {}", silly_slime_count);
             ++silly_slime_count;
-            auto new_enemy_stats = Stats{40 + i, 3 + i, 1 + i}; // index added to stats for variability
+            auto new_enemy_stats = Stats{40 + i, 3, 1}; // index added to stats for variability
             auto new_enemy = std::make_unique<Enemy>(
                 new_enemy_name, new_enemy_stats, new_enemy_stats.max_hp);
             new_enemy->set_position(row, col);
@@ -98,7 +98,7 @@ void World::reset_new_game() {
         } else if (kind == 2) {
             std::string new_enemy_name = std::format("Evil Skeleton {}", evil_skeleton_count);
             ++evil_skeleton_count;
-            auto new_enemy_stats = Stats{20 + i, 4 + i, 0 + i}; // index added to stats for variability
+            auto new_enemy_stats = Stats{20 + i, 4, 0}; // index added to stats for variability
             auto new_enemy = std::make_unique<Enemy>(
                 new_enemy_name, new_enemy_stats, new_enemy_stats.max_hp);
             new_enemy->set_position(row, col);
@@ -106,7 +106,7 @@ void World::reset_new_game() {
         } else { // kind == 3
             std::string new_enemy_name = std::format("Three Gnomes in a Trenchcoat {}", three_gnomes_in_a_trenchcoat_count);
             ++three_gnomes_in_a_trenchcoat_count;
-            auto new_enemy_stats = Stats{30 + i, 3 + i, 2 + i}; // index added to stats for variability
+            auto new_enemy_stats = Stats{30 + i, 3, 2}; // index added to stats for variability
             auto new_enemy = std::make_unique<Enemy>(
                 new_enemy_name, new_enemy_stats, new_enemy_stats.max_hp);
             new_enemy->set_position(row, col);
