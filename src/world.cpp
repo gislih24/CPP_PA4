@@ -1,16 +1,21 @@
 #include "./include/world.hpp"
 #include <algorithm>
+#include <cctype>
+#include <filesystem>
 #include <format>
+#include <fstream>
+#include <iomanip>
 #include <memory>
 #include <ranges>
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace {
 constexpr int WORLD_HEIGHT = 5;
 constexpr int WORLD_WIDTH = 5;
-
-std::size_t to_index(int value) {
-    return static_cast<std::size_t>(value);
-}
+constexpr std::string_view TINY_JRPG_SAVE_HEADER = "TINY_JRPG_SAVE_V1";
+constexpr std::string_view SAVE_DIRECTORY = "saves";
 } // namespace
 
 World::World()
@@ -26,6 +31,7 @@ World::World()
  * with the player and enemies.
  */
 void World::reset_new_game() {
+    current_save_slot_.clear();
     defeated_enemies_ = 0;
     enemies_.clear();
     for (auto& row : overworld_occupants_) {
@@ -46,7 +52,240 @@ void World::reset_new_game() {
     }
     populate_overworld();
 }
+
+/**
+ * @brief Saves the current state of the world to a save slot with the
+ * specified name.
+ * @param slot_name The name of the save slot to save to.
+ * @param error_message An output parameter that will contain an error message
+ * if the save fails.
+ * @return True if the save was successful, false otherwise.
+ */
+bool World::save_to_slot(std::string_view slot_name,
+                         std::string& error_message) {
+    error_message.clear();
+
+    const std::string trimmed_slot_name = trim_copy(slot_name);
+    if (trimmed_slot_name.empty() ||
+        sanitize_slot_name(trimmed_slot_name).empty()) {
+        error_message = "Save name must contain letters or numbers.";
+        return false;
+    }
+
+    std::error_code filesystem_error;
+    std::filesystem::create_directories(get_save_directory(), filesystem_error);
+    if (filesystem_error) {
+        error_message = "Failed to create the save directory.";
+        return false;
+    }
+
+    std::ofstream save_file(build_slot_save_path(trimmed_slot_name));
+    if (!save_file) {
+        error_message = "Failed to open the save file for writing.";
+        return false;
+    }
+
+    save_file << TINY_JRPG_SAVE_HEADER << '\n';
+    save_file << "slot_name " << std::quoted(trimmed_slot_name) << '\n';
+    save_file << "defeated_enemies " << defeated_enemies_ << '\n';
+    save_file << "player " << std::quoted(std::string(player_.get_name()))
+              << ' ' << player_.get_hp() << ' ' << player_.get_stats().max_hp
+              << ' ' << player_.get_stats().attack << ' '
+              << player_.get_stats().defence << ' ' << player_.get_x_pos()
+              << ' ' << player_.get_y_pos() << '\n';
+    save_file << "enemy_count " << enemies_.size() << '\n';
+
+    for (const auto& enemy : enemies_) {
+        if (enemy == nullptr) {
+            continue;
+        }
+
+        save_file << "enemy " << std::quoted(std::string(enemy->get_name()))
+                  << ' ' << enemy->get_hp() << ' ' << enemy->get_stats().max_hp
+                  << ' ' << enemy->get_stats().attack << ' '
+                  << enemy->get_stats().defence << ' ' << enemy->get_x_pos()
+                  << ' ' << enemy->get_y_pos() << '\n';
+    }
+
+    if (!save_file.good()) {
+        error_message = "Failed while writing the save file.";
+        return false;
+    }
+
+    current_save_slot_ = trimmed_slot_name;
+    return true;
+}
+
+/**
+ * @brief Loads the world state/data from a save slot with the specified name.
+ * @param slot_name The name of the save slot to load from.
+ * @param error_message An output parameter that will contain an error message
+ * if the load fails.
+ * @return True if the load was successful, false otherwise.
+ */
+bool World::load_from_slot(std::string_view slot_name,
+                           std::string& error_message) {
+    error_message.clear();
+
+    const std::string trimmed_slot_name = trim_copy(slot_name);
+    if (trimmed_slot_name.empty() ||
+        sanitize_slot_name(trimmed_slot_name).empty()) {
+        error_message = "Invalid save name.";
+        return false;
+    }
+
+    std::ifstream save_file(build_slot_save_path(trimmed_slot_name));
+    if (!save_file) {
+        error_message = "Save file not found.";
+        return false;
+    }
+
+    std::string save_header_line;
+    std::getline(save_file, save_header_line);
+    if (save_header_line != TINY_JRPG_SAVE_HEADER) {
+        error_message = "Save file format is invalid.";
+        return false;
+    }
+
+    std::string loaded_slot_name;
+    int loaded_defeated_enemies = 0;
+    std::string player_name;
+    int player_hp = 0;
+    int player_max_hp = 0;
+    int player_attack = 0;
+    int player_defence = 0;
+    int player_row = 0;
+    int player_col = 0;
+    std::size_t enemy_count = 0;
+
+    if (!read_labeled_value(save_file, "slot_name") ||
+        !(save_file >> std::quoted(loaded_slot_name)) ||
+        !read_labeled_value(save_file, "defeated_enemies") ||
+        !(save_file >> loaded_defeated_enemies) ||
+        !read_labeled_value(save_file, "player") ||
+        !(save_file >> std::quoted(player_name) >> player_hp >> player_max_hp >>
+          player_attack >> player_defence >> player_row >> player_col) ||
+        !read_labeled_value(save_file, "enemy_count") ||
+        !(save_file >> enemy_count)) {
+        error_message = "Save file contents are incomplete.";
+        return false;
+    }
+
+    if (loaded_defeated_enemies < 0 || player_max_hp < 0 || player_attack < 0 ||
+        player_defence < 0 || player_hp < 0 || player_hp > player_max_hp ||
+        !is_in_bounds({player_row, player_col})) {
+        error_message = "Save file contains invalid player data.";
+        return false;
+    }
+
+    std::vector<std::vector<bool>> is_tile_occupied(
+        WORLD_HEIGHT, std::vector<bool>(WORLD_WIDTH, false));
+    is_tile_occupied[to_index(player_row)][to_index(player_col)] = true;
+
+    PlayerCharacter loaded_player{
+        player_name, Stats{player_max_hp, player_attack, player_defence},
+        player_hp};
+    loaded_player.set_position(player_row, player_col);
+
+    std::vector<std::unique_ptr<Enemy>> loaded_enemies;
+    loaded_enemies.reserve(enemy_count);
+
+    for (std::size_t index = 0; index < enemy_count; ++index) {
+        std::string enemy_name;
+        int enemy_hp = 0;
+        int enemy_max_hp = 0;
+        int enemy_attack = 0;
+        int enemy_defence = 0;
+        int enemy_row = 0;
+        int enemy_col = 0;
+
+        if (!read_labeled_value(save_file, "enemy") ||
+            !(save_file >> std::quoted(enemy_name) >> enemy_hp >>
+              enemy_max_hp >> enemy_attack >> enemy_defence >> enemy_row >>
+              enemy_col)) {
+            error_message = "Save file contains incomplete enemy data.";
+            return false;
+        }
+
+        if (enemy_max_hp < 0 || enemy_attack < 0 || enemy_defence < 0 ||
+            enemy_hp < 0 || enemy_hp > enemy_max_hp ||
+            !is_in_bounds({enemy_row, enemy_col}) ||
+            is_tile_occupied[to_index(enemy_row)][to_index(enemy_col)]) {
+            error_message = "Save file contains invalid enemy data.";
+            return false;
+        }
+
+        is_tile_occupied[to_index(enemy_row)][to_index(enemy_col)] = true;
+
+        auto loaded_enemy = std::make_unique<Enemy>(
+            enemy_name, Stats{enemy_max_hp, enemy_attack, enemy_defence},
+            enemy_hp);
+        loaded_enemy->set_position(enemy_row, enemy_col);
+        loaded_enemies.push_back(std::move(loaded_enemy));
+    }
+
+    for (auto& row : overworld_occupants_) {
+        std::ranges::fill(row, nullptr);
+    }
+
+    player_ = std::move(loaded_player);
+    enemies_ = std::move(loaded_enemies);
+    defeated_enemies_ = loaded_defeated_enemies;
+    current_save_slot_ =
+        loaded_slot_name.empty() ? trimmed_slot_name : loaded_slot_name;
+    populate_overworld();
+    return true;
+}
+
+/**
+ * @brief Retrieves a list of available save slots by scanning the save
+ * directory for valid save files and gets their slot names.
+ * @return A vector of strings representing the names of available save slots.
+ */
+std::vector<std::string> World::list_save_slots() const {
+    std::vector<std::string> save_slots;
+
+    std::error_code filesystem_error;
+    if (!std::filesystem::exists(get_save_directory(), filesystem_error) ||
+        filesystem_error) {
+        return save_slots;
+    }
+
+    for (const auto& entry : std::filesystem::directory_iterator(
+             get_save_directory(), filesystem_error)) {
+        if (filesystem_error || !entry.is_regular_file() ||
+            entry.path().extension() != ".txt") {
+            continue;
+        }
+
+        std::ifstream save_file(entry.path());
+        if (!save_file) {
+            continue;
+        }
+
+        std::string magic_line;
+        std::getline(save_file, magic_line);
+        if (magic_line != TINY_JRPG_SAVE_HEADER) {
+            continue;
+        }
+
+        std::string slot_name;
+        if (!read_labeled_value(save_file, "slot_name") ||
+            !(save_file >> std::quoted(slot_name)) || slot_name.empty()) {
+            slot_name = entry.path().stem().string();
+        }
+
+        save_slots.push_back(slot_name);
+    }
+
+    std::ranges::sort(save_slots);
+    return save_slots;
+}
+
 /* ---------------------------------Getters--------------------------------- */
+std::string_view World::get_current_save_slot() const noexcept {
+    return current_save_slot_;
+}
 PlayerCharacter& World::get_player() noexcept {
     return player_;
 }
@@ -64,7 +303,7 @@ World::get_overworld_occupants() const noexcept {
     return overworld_occupants_;
 }
 
-int World::defeated_enemies() const noexcept {
+int World::get_defeated_enemies() const noexcept {
     return defeated_enemies_;
 }
 
@@ -73,7 +312,7 @@ int World::defeated_enemies() const noexcept {
  * @param row_change The change in the player's row position (positive for
  * down, negative for up).
  * @param col_change The change in the player's column position (positive for
- * down, negative for up).
+ * right, negative for left).
  * @return A MoveOutcome struct indicating the result of the move attempt.
  */
 MoveOutcome World::try_move_player(int row_change, int col_change) noexcept {
@@ -144,6 +383,7 @@ bool World::remove_enemy(Enemy const* enemy) noexcept {
         return false;
     }
 
+    const Position enemy_position{enemy->get_x_pos(), enemy->get_y_pos()};
     int removed = 0;
     for (auto it = enemies_.begin(); it != enemies_.end();) {
         if (it->get() == enemy) {
@@ -158,8 +398,7 @@ bool World::remove_enemy(Enemy const* enemy) noexcept {
         return false;
     }
 
-    if (const Position enemy_position{enemy->get_x_pos(), enemy->get_y_pos()};
-        is_in_bounds(enemy_position) &&
+    if (is_in_bounds(enemy_position) &&
         get_occupant_at(enemy_position) == enemy) {
         clear_tile(enemy_position);
     }
@@ -168,6 +407,10 @@ bool World::remove_enemy(Enemy const* enemy) noexcept {
     return true;
 }
 
+/**
+ * @brief Populates the overworld grid with the player and enemies based on
+ * their current positions.
+ */
 void World::populate_overworld() {
     move_entity(&player_, player_.get_x_pos(), player_.get_y_pos());
     for (const auto& enemy : enemies_) {
@@ -254,4 +497,103 @@ void World::set_tile(Position position, Entity* entity) noexcept {
 
     overworld_occupants_[to_index(position.row)][to_index(position.col)] =
         entity;
+}
+
+std::size_t World::to_index(int value) const {
+    return static_cast<std::size_t>(value);
+}
+
+/**
+ * @brief Creates and returns a trimmed copy of the input string, removing
+ * leading and trailing whitespace characters.
+ * @param input The string to be trimmed.
+ * @return A new string with leading and trailing whitespace removed.
+ */
+std::string World::trim_copy(std::string_view input) const {
+    std::size_t start = 0;
+    while (start < input.size() &&
+           std::isspace(static_cast<unsigned char>(input[start]))) {
+        ++start;
+    }
+
+    std::size_t end = input.size();
+    while (end > start &&
+           std::isspace(static_cast<unsigned char>(input[end - 1]))) {
+        --end;
+    }
+
+    return std::string(input.substr(start, end - start));
+}
+
+/**
+ * @brief Sanitizes the provided slot name by removing invalid characters and
+ * replacing sequences of spaces, dashes, or underscores with a single
+ * underscore.
+ * @param slot_name The slot name to sanitize.
+ * @return The sanitized slot name.
+ */
+std::string World::sanitize_slot_name(std::string_view slot_name) const {
+    std::string sanitized_slot_name;
+
+    for (char curr_char : slot_name) {
+        if (const auto curr_char_unsigned =
+                static_cast<unsigned char>(curr_char);
+            std::isalnum(curr_char_unsigned)) {
+            sanitized_slot_name.push_back(
+                static_cast<char>(std::tolower(curr_char_unsigned)));
+            continue;
+        }
+
+        if ((curr_char == ' ' || curr_char == '-' || curr_char == '_') &&
+            (sanitized_slot_name.empty() ||
+             sanitized_slot_name.back() != '_')) {
+            sanitized_slot_name.push_back('_');
+        }
+    }
+
+    while (!sanitized_slot_name.empty() && sanitized_slot_name.back() == '_') {
+        sanitized_slot_name.pop_back();
+    }
+
+    return sanitized_slot_name;
+}
+
+/**
+ * @brief Gets the path to the save directory where game saves are stored. If
+ * the directory does not exist, it will be created when saving a game.
+ * @return The path to the save directory as a std::filesystem::path object.
+ */
+std::filesystem::path World::get_save_directory() const {
+    return std::filesystem::path{SAVE_DIRECTORY};
+}
+
+/**
+ * @brief Builds the full file path for a save slot based on the provided slot
+ * name, by sanitizing the slot name and appending the appropriate file
+ * extension in the save directory.
+ * @param slot_name The name of the save slot to build the file path for.
+ * @return The full file path for the save slot as a std::filesystem::path
+ * object.
+ */
+std::filesystem::path
+World::build_slot_save_path(std::string_view slot_name) const {
+    return get_save_directory() /
+           std::format("{}.txt", sanitize_slot_name(slot_name));
+}
+
+/**
+ * @brief Reads a labeled value from the input stream, expecting a specific
+ * label before the value.
+ *
+ * This is used to ensure that the save file has the correct format and that
+ * the expected data is present.
+ * @param input The input file stream to read from.
+ * @param expected_label The label expected before the value.
+ * @return True if the expected label is found and the value is read
+ * successfully; false otherwise.
+ */
+bool World::read_labeled_value(std::istream& input,
+                               std::string_view expected_label) const {
+    std::string label;
+    return static_cast<bool>(input >> label) && label == expected_label;
 }

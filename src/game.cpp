@@ -22,7 +22,6 @@ Game::Game(std::unique_ptr<GameState> initial_state)
  * state, gets input from the user, and then handles that input.
  */
 void Game::run() {
-    world_.reset_new_game();
     while (game_is_running_) {
         // Apply any pending state changes before rendering and handling input.
         apply_pending_state_change();

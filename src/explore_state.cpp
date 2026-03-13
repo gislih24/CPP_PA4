@@ -1,10 +1,32 @@
 #include "./include/explore_state.hpp"
 #include "./include/battle_state.hpp"
 #include "./include/game.hpp"
+#include <cctype>
 #include <format>
 #include <iostream>
 #include <print>
+#include <string>
 #include <utility>
+
+namespace {
+
+std::string trim_copy(std::string_view input) {
+    std::size_t start = 0;
+    while (start < input.size() &&
+           std::isspace(static_cast<unsigned char>(input[start]))) {
+        ++start;
+    }
+
+    std::size_t end = input.size();
+    while (end > start &&
+           std::isspace(static_cast<unsigned char>(input[end - 1]))) {
+        --end;
+    }
+
+    return std::string(input.substr(start, end - start));
+}
+
+} // namespace
 
 ExploreState::ExploreState(std::string status_message)
     : status_message_(std::move(status_message)) {}
@@ -74,10 +96,16 @@ void ExploreState::build_map(const Game& game) {
 }
 
 void ExploreState::handle_input(Game& game, std::string_view input) {
-    const std::string choice = normalize_input(input);
+    const std::string trimmed_input = trim_copy(input);
+    const std::string choice = normalize_input(trimmed_input);
 
     if (choice == "quit" || choice == "exit" || choice == "q") {
         game.quit();
+        return;
+    }
+
+    if (choice == "save" || choice.starts_with("save ")) {
+        save(game, trimmed_input);
         return;
     }
 
@@ -101,7 +129,7 @@ void ExploreState::handle_input(Game& game, std::string_view input) {
         return;
     }
 
-    status_message_ = "Use W/A/S/D to move or Q to quit.";
+    status_message_ = "Use W/A/S/D to move, SAVE to save, or Q to quit.";
     rebuild_ui(game);
 }
 
@@ -110,19 +138,50 @@ void ExploreState::rebuild_ui(const Game& game) {
     build_map(game);
 
     const auto& player = game.get_world().get_player();
+    const std::string save_slot =
+        game.get_world().get_current_save_slot().empty()
+            ? "unsaved"
+            : std::string(game.get_world().get_current_save_slot());
     status_display_.emplace_back(std::format(
         "HP: {}/{} | Defeated enemies: {}\n", player.get_hp(),
-        player.get_stats().max_hp, game.get_world().defeated_enemies()));
+        player.get_stats().max_hp, game.get_world().get_defeated_enemies()));
+    status_display_.emplace_back(std::format("Current save: {}\n", save_slot));
     status_display_.emplace_back(std::format("{}\n", status_message_));
     status_display_.emplace_back("Legend: @ = player, # = enemy, . = empty\n");
 
     if (game.get_world().get_enemies().empty()) {
-        action_menu_.emplace_back(
-            "All enemies are defeated. Type Q to quit.\n");
+        action_menu_.emplace_back("All enemies are defeated. Type SAVE or SAVE "
+                                  "<name> to save. Q to quit.\n");
     } else {
-        action_menu_.emplace_back("Move with W/A/S/D. Type Q to quit.\n");
+        action_menu_.emplace_back("Move with W/A/S/D. Type SAVE or SAVE <name> "
+                                  "to save. Q to quit.\n");
     }
     action_menu_.emplace_back("> ");
+}
+
+void ExploreState::save(Game& game, std::string_view input) {
+    std::string slot_name =
+        std::string(game.get_world().get_current_save_slot());
+    if (input.size() > 4) {
+        slot_name = trim_copy(input.substr(4));
+    }
+
+    if (slot_name.empty()) {
+        status_message_ = "Enter SAVE <name> to create a new save.";
+        rebuild_ui(game);
+        return;
+    }
+
+    std::string error_message;
+    if (!game.get_world().save_to_slot(slot_name, error_message)) {
+        status_message_ = error_message;
+        rebuild_ui(game);
+        return;
+    }
+
+    status_message_ = std::format("Saved game to '{}'.",
+                                  game.get_world().get_current_save_slot());
+    rebuild_ui(game);
 }
 
 void ExploreState::move(Game& game, Action action) {
