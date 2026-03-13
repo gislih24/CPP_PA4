@@ -88,3 +88,31 @@ void BattleState::clear_message_vectors() {
     status_display_.clear();
     action_menu_.clear();
 }
+
+void BattleState::rebuild_status(const Game& game) {
+    const auto& pc = game.get_world().get_player();
+    const int enemy_hp = enemy_ == nullptr ? 0 : enemy_->get_hp();
+    const int enemy_max_hp = enemy_ == nullptr ? 0 : enemy_->get_stats().max_hp;
+
+    status_display_.emplace_back(
+        std::format("Your HP: {}/{}\n", pc.get_hp(), pc.get_stats().max_hp));
+    status_display_.emplace_back(
+        std::format("{} HP: {}/{}\n", enemy_name_, enemy_hp, enemy_max_hp));
+
+    switch (outcome_) {
+    case Outcome::Ongoing:
+        action_menu_.emplace_back("Choose an action:\n1. attack\n2. flee\n");
+        break;
+    case Outcome::Victory:
+        action_menu_.emplace_back("Press enter to return to the overworld.\n");
+        break;
+    case Outcome::Fled:
+        action_menu_.emplace_back("Press enter to return to the overworld.\n");
+        break;
+    case Outcome::Defeat:
+        action_menu_.emplace_back("Press enter to end the run.\n");
+        break;
+    }
+
+    action_menu_.emplace_back("> ");
+}

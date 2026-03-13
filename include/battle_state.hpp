@@ -35,4 +35,5 @@ class BattleState final : public GameState {
     Outcome outcome_{Outcome::Ongoing};
 
     void clear_message_vectors();
+    void rebuild_status(const Game& game);
 };
