@@ -115,6 +115,26 @@ void World::set_player_position(Position position) noexcept {
     player_.set_position(int(position.row), int(position.col));
 }
 
+bool World::remove_enemy(Enemy const* enemy) noexcept {
+    if (enemy == nullptr) {
+        return false;
+    }
+
+    if (Position enemy_position{enemy->get_x_pos(), enemy->get_y_pos()};
+        is_in_bounds(enemy_position) &&
+        get_occupant_at(enemy_position) == enemy) {
+        clear_tile(enemy_position);
+    }
+
+    const auto removed = std::erase_if(
+        enemies_, [enemy](const std::unique_ptr<Enemy>& candidate) {
+            return candidate.get() == enemy;
+        });
+
+    defeated_enemies_ += static_cast<int>(removed);
+    return removed > 0;
+}
+
 void World::populate_overworld() {
     move_entity(&player_, player_.get_x_pos(), player_.get_y_pos());
     for (const auto& enemy : enemies_) {
