@@ -96,6 +96,25 @@ MoveOutcome World::try_move_player(int row_change, int col_change) noexcept {
             .enemy = nullptr};
 }
 
+void World::set_player_position(Position position) noexcept {
+    if (!is_in_bounds(position)) {
+        return;
+    }
+
+    if (Entity const* dest_occupant = get_occupant_at(position);
+        dest_occupant != nullptr && dest_occupant != &player_) {
+        return;
+    }
+
+    if (const Position current_pos{player_.get_x_pos(), player_.get_y_pos()};
+        is_in_bounds(current_pos) && get_occupant_at(current_pos) == &player_) {
+        clear_tile(current_pos);
+    }
+
+    set_tile(position, &player_);
+    player_.set_position(int(position.row), int(position.col));
+}
+
 void World::populate_overworld() {
     move_entity(&player_, player_.get_x_pos(), player_.get_y_pos());
     for (const auto& enemy : enemies_) {
