@@ -14,8 +14,19 @@ BattleState::BattleState(Enemy* enemy)
       enemy_name_(enemy == nullptr ? "Unknown enemy"
                                    : std::string(enemy->get_name())) {}
 
-void BattleState::on_enter(Game&) {
-    combat_log_.emplace_back("Woe, a fiend is upon ye!");
+void BattleState::on_enter(Game& game) {
+    clear_message_vectors();
+
+    if (enemy_ == nullptr) {
+        combat_log_.emplace_back("There is nothing here to fight.\n");
+        outcome_ = Outcome::Fled;
+        rebuild_status(game);
+        return;
+    }
+
+    combat_log_.emplace_back(
+        std::format("A devious {} blocks your path!\n", enemy_name_));
+    rebuild_status(game);
 }
 
 void BattleState::render(const Game&) const {
