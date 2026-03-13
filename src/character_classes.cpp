@@ -1,6 +1,6 @@
 #include "./include/character_classes.hpp"
 
-Knight::Knight() : PlayerCharacter("Knight", Stats{14, 3, 2}, 14) {}
+Knight::Knight() : PlayerCharacter("Knight", Stats{19, 3, 2}, 19) {}
 
 Knight::Knight(const Stats& stats, int hp)
     : PlayerCharacter("Knight", stats, hp) {}
@@ -9,7 +9,7 @@ void Knight::shield_brace() noexcept {
     // Buff logic is handled in BattleState.
 }
 
-Wizard::Wizard() : PlayerCharacter("Wizard", Stats{8, 5, 0}, 8) {}
+Wizard::Wizard() : PlayerCharacter("Wizard", Stats{13, 5, 0}, 13) {}
 
 int Wizard::fireball(Entity& target) noexcept {
     const int target_hp_before = target.get_hp();

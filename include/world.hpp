@@ -36,12 +36,19 @@ class World {
     const std::vector<std::vector<Entity*>>&
     get_overworld_occupants() const noexcept;
     int get_defeated_enemies() const noexcept;
+
+    
+    int get_wizard_hp() const noexcept;
+    int get_wizard_max_hp() const noexcept;
+    void set_wizard_hp(int value) noexcept;
     MoveOutcome try_move_player(int row_change, int col_change) noexcept;
     void set_player_position(Position position) noexcept;
     bool remove_enemy(Enemy const* enemy) noexcept;
 
   private:
     PlayerCharacter player_;
+    int wizard_hp_{};
+    int wizard_max_hp_{};
     std::vector<std::unique_ptr<Enemy>> enemies_;
     std::vector<std::vector<Entity*>> overworld_occupants_;
     int defeated_enemies_{};

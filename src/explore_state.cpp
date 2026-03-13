@@ -138,13 +138,15 @@ void ExploreState::rebuild_ui(const Game& game) {
     build_map(game);
 
     const auto& player = game.get_world().get_player();
+    const auto& world = game.get_world();
     const std::string save_slot =
         game.get_world().get_current_save_slot().empty()
             ? "unsaved"
             : std::string(game.get_world().get_current_save_slot());
     status_display_.emplace_back(std::format(
-        "HP: {}/{} | Defeated enemies: {}\n", player.get_hp(),
-        player.get_stats().max_hp, game.get_world().get_defeated_enemies()));
+        "Knight HP: {}/{} | Wizard HP: {}/{} | Defeated enemies: {}\n",
+        player.get_hp(), player.get_stats().max_hp, world.get_wizard_hp(),
+        world.get_wizard_max_hp(), world.get_defeated_enemies()));
     status_display_.emplace_back(std::format("Current save: {}\n", save_slot));
     status_display_.emplace_back(std::format("{}\n", status_message_));
     status_display_.emplace_back("Legend: @ = player, # = enemy, . = empty\n");

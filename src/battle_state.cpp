@@ -380,10 +380,15 @@ void BattleState::initialize_party(const Game& game) {
         return;
     }
 
-    const auto& player = game.get_world().get_player();
+    const auto& world = game.get_world();
+    const auto& player = world.get_player();
+
     party_.add_member(
         std::make_unique<Knight>(player.get_stats(), player.get_hp()));
-    party_.add_member(std::make_unique<Wizard>());
+
+    auto wizard = std::make_unique<Wizard>();
+    wizard->set_hp(world.get_wizard_hp());
+    party_.add_member(std::move(wizard));
 }
 
 void BattleState::rebuild_status() {
@@ -452,8 +457,15 @@ void BattleState::sync_party_leader(Game& game) {
     if (party_.members().empty() || party_.members().front() == nullptr) {
         return;
     }
+    auto& world = game.get_world();
+    world.get_player().set_hp(party_.members().front()->get_hp());
 
-    game.get_world().get_player().set_hp(party_.members().front()->get_hp());
+    for (const auto& member : party_.members()) {
+        if (auto* wizard = dynamic_cast<Wizard*>(member.get())) {
+            world.set_wizard_hp(wizard->get_hp());
+            break;
+        }
+    }
 }
 
 void BattleState::leave_battle(Game& game) {

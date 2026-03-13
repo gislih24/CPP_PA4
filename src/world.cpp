@@ -39,10 +39,14 @@ void World::reset_new_game() {
         std::ranges::fill(row, nullptr);
     }
 
-    auto initial_stats = Stats{15, 6, 2};
+    auto initial_stats = Stats{20, 6, 2};
     player_ =
         PlayerCharacter{"The Knight", initial_stats, initial_stats.max_hp};
     player_.set_position(0, 0);
+
+    // Reset Wizard HP for a new game (default Wizard has 13 max HP).
+    wizard_max_hp_ = 13;
+    wizard_hp_ = wizard_max_hp_;
 
     std::mt19937 rng(std::random_device{}());            // create once
     std::uniform_int_distribution<int> dist_count(3, 5); // how many enemies
@@ -367,6 +371,24 @@ World::get_overworld_occupants() const noexcept {
 
 int World::get_defeated_enemies() const noexcept {
     return defeated_enemies_;
+}
+
+int World::get_wizard_hp() const noexcept {
+    return wizard_hp_;
+}
+
+int World::get_wizard_max_hp() const noexcept {
+    return wizard_max_hp_;
+}
+
+void World::set_wizard_hp(int value) noexcept {
+    if (value < 0) {
+        value = 0;
+    }
+    if (wizard_max_hp_ > 0 && value > wizard_max_hp_) {
+        value = wizard_max_hp_;
+    }
+    wizard_hp_ = value;
 }
 
 /**
