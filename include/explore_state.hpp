@@ -21,6 +21,7 @@ class ExploreState final : public GameState {
     void clear_message_vectors();
     void build_map(const Game& game);
     void rebuild_ui(const Game& game);
+    void save(Game& game, std::string_view input);
     void move(Game& game, Action action);
 
     std::string status_message_;
