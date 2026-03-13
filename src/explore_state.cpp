@@ -104,8 +104,70 @@ void ExploreState::handle_input(Game& game, std::string_view input) {
     rebuild_ui(game);
 }
 
-void ExploreState::move([[maybe_unused]] Game& game, Action) {
-    auto the_x_pos = game.get_world().player_.get_x_pos()
+void ExploreState::rebuild_ui(const Game& game) {
+    clear_message_vectors();
+    build_map(game);
+
+    const auto& player = game.get_world().get_player();
+    status_display_.emplace_back(std::format(
+        "HP: {}/{} | Defeated enemies: {}\n", player.get_hp(),
+        player.get_stats().max_hp, game.get_world().defeated_enemies()));
+    status_display_.emplace_back(std::format("{}\n", status_message_));
+    status_display_.emplace_back("Legend: @ = player, # = enemy, . = empty\n");
+
+    if (game.get_world().get_enemies().empty()) {
+        action_menu_.emplace_back(
+            "All enemies are defeated. Type Q to quit.\n");
+    } else {
+        action_menu_.emplace_back("Move with W/A/S/D. Type Q to quit.\n");
+    }
+    action_menu_.emplace_back("> ");
+}
+
+void ExploreState::move(Game& game, Action action) {
+    int row_change = 0;
+    int col_change = 0;
+    std::string direction;
+
+    switch (action) {
+    case Action::MOVE_LEFT:
+        col_change = -1;
+        direction = "left";
+        break;
+    case Action::MOVE_RIGHT:
+        col_change = 1;
+        direction = "right";
+        break;
+    case Action::MOVE_UP:
+        row_change = -1;
+        direction = "up";
+        break;
+    case Action::MOVE_DOWN:
+        row_change = 1;
+        direction = "down";
+        break;
+    }
+
+    const MoveOutcome outcome =
+        game.get_world().try_move_player(row_change, col_change);
+
+    switch (outcome.result) {
+    case MoveResult::moved:
+        status_message_ = std::format("You move {}.", direction);
+        rebuild_ui(game);
+        return;
+    case MoveResult::enemy_encounter:
+        game.request_state_change(std::make_unique<BattleState>(outcome.enemy));
+        return;
+    case MoveResult::out_of_bounds:
+        status_message_ = "You can't leave the map.";
+        rebuild_ui(game);
+        return;
+    case MoveResult::blocked:
+        status_message_ = "That path is blocked.";
+        rebuild_ui(game);
+        return;
+    }
 }
 
 void ExploreState::clear_message_vectors() {
