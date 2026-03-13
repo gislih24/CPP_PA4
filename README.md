@@ -37,7 +37,6 @@ class GameState {
 GameState <|-- MainMenuState
 GameState <|-- ExploreState
 GameState <|-- BattleState
-GameState <|-- InventoryState
 GameState <|-- GameOverState
 
 class World {
@@ -75,12 +74,6 @@ class BattleState {
     +render(const Game& game) void
     +handle_input(Game& game, string_view input) void
     -clear_message_vectors() void
-}
-
-class InventoryState {
-    +on_enter(Game& game) void
-    +render(const Game& game) const void
-    +handle_input(Game& game, string_view input) void
 }
 
 class GameOverState {
