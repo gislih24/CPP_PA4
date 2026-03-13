@@ -85,8 +85,8 @@ void BattleState::on_enter(Game& game) {
         return;
     }
 
-    combat_log_.emplace_back(
-        std::format("A devious {} blocks your path!\n", enemy_name_));
+    combat_log_.emplace_back(std::format(
+        "Woe, a devious {} fiend blocks your path!\n", enemy_name_));
     rebuild_status();
 }
 
@@ -126,7 +126,8 @@ void BattleState::handle_input(Game& game, std::string_view input) {
     }
 
     if (members.front() == nullptr || !members.front()->is_alive()) {
-        combat_log_.emplace_back("The Knight falls. The adventure ends here.\n");
+        combat_log_.emplace_back(
+            "The Knight falls. The adventure ends here.\n");
         outcome_ = Outcome::Defeat;
         sync_party_leader(game);
         rebuild_status();
@@ -141,7 +142,8 @@ void BattleState::handle_input(Game& game, std::string_view input) {
         return;
     }
 
-    auto [actor, actor_index] = find_next_alive_member(party_, current_actor_index_);
+    auto [actor, actor_index] =
+        find_next_alive_member(party_, current_actor_index_);
     if (actor == nullptr) {
         current_actor_index_ = 0;
         std::tie(actor, actor_index) = find_next_alive_member(party_, 0);
@@ -178,14 +180,15 @@ void BattleState::handle_input(Game& game, std::string_view input) {
         int selected_index = -1;
         try {
             selected_index = std::stoi(choice);
-        } catch (...) {
+        } catch (const std::invalid_argument&) {
             selected_index = -1;
         }
 
         if (selected_index <= 0 ||
             static_cast<std::size_t>(selected_index) > members.size() ||
             members[static_cast<std::size_t>(selected_index) - 1] == nullptr ||
-            !members[static_cast<std::size_t>(selected_index) - 1]->is_alive()) {
+            !members[static_cast<std::size_t>(selected_index) - 1]
+                 ->is_alive()) {
             combat_log_.emplace_back("Invalid ally selection.\n");
             rebuild_status();
             return;
@@ -207,9 +210,9 @@ void BattleState::handle_input(Game& game, std::string_view input) {
 
         if (choice == "1" || choice == "attack") {
             const int damage_dealt = actor->attack(*enemy_);
-            combat_log_.emplace_back(std::format(
-                "{} attacks and deals {} damage.\n", role_label(*actor),
-                damage_dealt));
+            combat_log_.emplace_back(
+                std::format("{} attacks and deals {} damage.\n",
+                            role_label(*actor), damage_dealt));
         } else if (choice == "2" || choice == ability_1) {
             if (auto* knight = dynamic_cast<Knight*>(actor)) {
                 if (shield_brace_active_) {
@@ -219,7 +222,7 @@ void BattleState::handle_input(Game& game, std::string_view input) {
                     return;
                 }
 
-                for (auto& ally : members) {
+                for (auto const& ally : members) {
                     if (ally != nullptr) {
                         ally->set_defence(ally->get_stats().defence + 2);
                     }
@@ -227,12 +230,13 @@ void BattleState::handle_input(Game& game, std::string_view input) {
                 shield_brace_active_ = true;
                 knight->shield_brace();
                 combat_log_.emplace_back(
-                    "Knight uses shield_brace. Allies gain 2 defence until the enemy acts.\n");
+                    "Knight uses shield_brace. Allies gain 2 defence until the "
+                    "enemy acts.\n");
             } else if (auto* wizard = dynamic_cast<Wizard*>(actor)) {
                 const int damage_dealt = wizard->fireball(*enemy_);
-                combat_log_.emplace_back(std::format(
-                    "Wizard casts fireball and deals {} damage.\n",
-                    damage_dealt));
+                combat_log_.emplace_back(
+                    std::format("Wizard casts fireball and deals {} damage.\n",
+                                damage_dealt));
             } else {
                 combat_log_.emplace_back("No ability is bound to slot 2.\n");
                 rebuild_status();
@@ -267,7 +271,8 @@ void BattleState::handle_input(Game& game, std::string_view input) {
     }
 
     if (!members.front()->is_alive()) {
-        combat_log_.emplace_back("The Knight falls. The adventure ends here.\n");
+        combat_log_.emplace_back(
+            "The Knight falls. The adventure ends here.\n");
         outcome_ = Outcome::Defeat;
         sync_party_leader(game);
         rebuild_status();
@@ -295,7 +300,7 @@ void BattleState::handle_input(Game& game, std::string_view input) {
 
     std::vector<PlayerCharacter*> alive_members;
     alive_members.reserve(members.size());
-    for (auto& member : members) {
+    for (auto const& member : members) {
         if (member != nullptr && member->is_alive()) {
             alive_members.push_back(member.get());
         }
@@ -310,16 +315,17 @@ void BattleState::handle_input(Game& game, std::string_view input) {
     }
 
     static std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<std::size_t> dist(0, alive_members.size() - 1);
+    std::uniform_int_distribution<std::size_t> dist(0,
+                                                    alive_members.size() - 1);
     PlayerCharacter* target = alive_members[dist(rng)];
 
     const int damage_dealt = enemy_->attack(*target);
-    combat_log_.emplace_back(std::format(
-        "{} hits {} for {} damage.\n", enemy_name_, role_label(*target),
-        damage_dealt));
+    combat_log_.emplace_back(std::format("{} hits {} for {} damage.\n",
+                                         enemy_name_, role_label(*target),
+                                         damage_dealt));
 
     if (shield_brace_active_) {
-        for (auto& member : members) {
+        for (auto const& member : members) {
             if (member != nullptr) {
                 member->set_defence(member->get_stats().defence - 2);
             }
@@ -329,7 +335,8 @@ void BattleState::handle_input(Game& game, std::string_view input) {
     }
 
     if (!members.front()->is_alive()) {
-        combat_log_.emplace_back("The Knight falls. The adventure ends here.\n");
+        combat_log_.emplace_back(
+            "The Knight falls. The adventure ends here.\n");
         outcome_ = Outcome::Defeat;
         sync_party_leader(game);
         rebuild_status();
@@ -372,9 +379,9 @@ void BattleState::rebuild_status() {
             continue;
         }
 
-        status_display_.emplace_back(std::format(
-            "{} HP: {}/{}\n", role_label(*member), member->get_hp(),
-            member->get_stats().max_hp));
+        status_display_.emplace_back(
+            std::format("{} HP: {}/{}\n", role_label(*member), member->get_hp(),
+                        member->get_stats().max_hp));
     }
 
     const int enemy_hp = enemy_ == nullptr ? 0 : enemy_->get_hp();
@@ -386,7 +393,8 @@ void BattleState::rebuild_status() {
     case Outcome::Ongoing:
         if (awaiting_heal_target_) {
             action_menu_.emplace_back("Choose an ally to heal:\n");
-            for (std::size_t index = 0; index < party_.members().size(); ++index) {
+            for (std::size_t index = 0; index < party_.members().size();
+                 ++index) {
                 const auto& member = party_.members()[index];
                 if (member == nullptr || !member->is_alive()) {
                     continue;
@@ -403,9 +411,10 @@ void BattleState::rebuild_status() {
             (void)unused_index;
             if (actor != nullptr) {
                 const auto [ability_1, ability_2] = role_abilities(*actor);
-                action_menu_.emplace_back(std::format(
-                    "{}'s turn. Choose an action:\n1. attack\n2. {}\n3. {}\n0. flee\n",
-                    role_label(*actor), ability_1, ability_2));
+                action_menu_.emplace_back(
+                    std::format("{}'s turn. Choose an action:\n1. attack\n2. "
+                                "{}\n3. {}\n0. flee\n",
+                                role_label(*actor), ability_1, ability_2));
             } else {
                 action_menu_.emplace_back("No one is left standing.\n");
             }
