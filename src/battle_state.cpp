@@ -238,7 +238,16 @@ void BattleState::handle_input(Game& game, std::string_view input) {
                                          "defence increased by 2 until the "
                                          "enemy acts.\n");
             } else if (auto* wizard = dynamic_cast<Wizard*>(actor)) {
+                if (wizard->fireball_cooldown() > 0) {
+                    combat_log_.emplace_back(std::format(
+                        "Fireball is on cooldown for {} more round(s).\n",
+                        wizard->fireball_cooldown()));
+                    rebuild_status();
+                    return;
+                }
+
                 const int damage_dealt = wizard->fireball(*enemy_);
+                wizard->set_fireball_cooldown(3);
                 combat_log_.emplace_back(
                     std::format("Wizard casts fireball and deals {} damage.\n",
                                 damage_dealt));
@@ -338,6 +347,13 @@ void BattleState::handle_input(Game& game, std::string_view input) {
         }
         shield_brace_active_ = false;
         combat_log_.emplace_back("Shield brace wears off.\n");
+    }
+
+    // Tick down Wizard fireball cooldowns at the end of each round.
+    for (auto const& member : members) {
+        if (auto* wizard = dynamic_cast<Wizard*>(member.get())) {
+            wizard->decrement_fireball_cooldown();
+        }
     }
 
     if (!any_party_members_alive(party_)) {
