@@ -20,9 +20,9 @@ void Entity::take_dmg(int val) noexcept {
     if (mitigated_damage < 0) {
         mitigated_damage = 0;
     }
-    set_hp(get_hp() - mitigated_damage);
-    if (get_hp() < 0) {
-        set_hp(0);
+    hp_ -= mitigated_damage;
+    if (hp_ < 0) {
+        hp_ = 0;
     }
 }
 
@@ -32,7 +32,7 @@ void Entity::heal(int val) noexcept {
     } else if (get_hp() <= 0) {
         return;
     } else {
-        set_hp(get_hp() + val);
+        hp_ += val;
     }
 }
 

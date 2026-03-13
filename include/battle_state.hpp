@@ -1,7 +1,9 @@
 #pragma once
 
 #include "game_state.hpp"
+#include "party.hpp"
 #include "world.hpp"
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -30,8 +32,14 @@ class BattleState final : public GameState {
     Position encounter_position_{};
     std::string enemy_name_{};
     Outcome outcome_{Outcome::Ongoing};
+    Party party_{};
+    bool shield_brace_active_{false};
+    std::size_t current_actor_index_{0};
+    bool awaiting_heal_target_{false};
 
     void clear_message_vectors();
-    void rebuild_status(const Game& game);
+    void initialize_party(const Game& game);
+    void rebuild_status();
+    void sync_party_leader(Game& game);
     void leave_battle(Game& game);
 };

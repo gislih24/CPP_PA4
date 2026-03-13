@@ -5,9 +5,9 @@ PlayerCharacter::PlayerCharacter(const std::string& name, const Stats& stats,
     : Entity(name, stats, hp) {}
 
 int PlayerCharacter::attack(Entity& target) noexcept {
-    int target_hp_before = target.get_hp();
+    const int target_hp_before = target.get_hp();
     target.take_dmg(get_stats().attack);
-    int target_hp_after = target.get_hp();
-    int damage_dealt = target_hp_before - target_hp_after;
+    const int target_hp_after = target.get_hp();
+    const int damage_dealt = target_hp_before - target_hp_after;
     return damage_dealt;
 }
