@@ -120,19 +120,28 @@ bool World::remove_enemy(Enemy const* enemy) noexcept {
         return false;
     }
 
-    if (Position enemy_position{enemy->get_x_pos(), enemy->get_y_pos()};
+    int removed = 0;
+    for (auto it = enemies_.begin(); it != enemies_.end();) {
+        if (it->get() == enemy) {
+            it = enemies_.erase(it);
+            ++removed;
+        } else {
+            ++it;
+        }
+    }
+
+    if (removed == 0) {
+        return false;
+    }
+
+    if (const Position enemy_position{enemy->get_x_pos(), enemy->get_y_pos()};
         is_in_bounds(enemy_position) &&
         get_occupant_at(enemy_position) == enemy) {
         clear_tile(enemy_position);
     }
 
-    const auto removed = std::erase_if(
-        enemies_, [enemy](const std::unique_ptr<Enemy>& candidate) {
-            return candidate.get() == enemy;
-        });
-
-    defeated_enemies_ += static_cast<int>(removed);
-    return removed > 0;
+    defeated_enemies_ += removed;
+    return true;
 }
 
 void World::populate_overworld() {
