@@ -16,6 +16,8 @@ class BattleState final : public GameState {
     void handle_input(Game& game, std::string_view input) override;
 
   private:
+    enum class Outcome { Ongoing, Victory, Fled, Defeat };
+
     // Actions that occurred in combat,
     // e.g.: "player attacks for 7 damage", "enemy attacks for 4 damage",
     // "player has lost status effect: 2x damage"
@@ -26,6 +28,11 @@ class BattleState final : public GameState {
     // Actions currently available to the player,
     // e.g.: "Choose an action: 1. Attack, 2. Inventory, 3. Flee"
     std::vector<std::string> action_menu_ = {};
+
+    Enemy* enemy_{nullptr};
+    Position encounter_position_{};
+    std::string enemy_name_{};
+    Outcome outcome_{Outcome::Ongoing};
 
     void clear_message_vectors();
 };
