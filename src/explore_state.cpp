@@ -1,7 +1,8 @@
 #include "./include/explore_state.hpp"
 #include "./include/battle_state.hpp"
 #include "./include/game.hpp"
-#include <memory>
+#include <format>
+#include <iostream>
 #include <print>
 #include <utility>
 
