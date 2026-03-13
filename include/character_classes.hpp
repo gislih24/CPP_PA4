@@ -3,13 +3,15 @@
 #include "player_character.hpp"
 
 class Knight : public PlayerCharacter {
-	public:
-		void shield_brace();
+  public:
+    Knight();
+    Knight(const Stats& stats, int hp);
+    void shield_brace() noexcept;
 };
 
 class Wizard : public PlayerCharacter {
-	public:
-		int fireball(Entity& target);
-		// Heals the chosen party member
-		void healing_touch(PlayerCharacter& target);
+  public:
+    Wizard();
+    int fireball(Entity& target) const noexcept;
+    void healing_touch(PlayerCharacter& target) const noexcept;
 };

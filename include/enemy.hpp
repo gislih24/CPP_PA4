@@ -9,5 +9,5 @@ class Enemy : public Entity {
     int damage_dealt = 0;
 
     Enemy(const std::string& name, const Stats& stats, int hp);
-    virtual int attack(Entity& target);
+    virtual int attack(Entity& target) noexcept;
 };

@@ -1,12 +1,8 @@
 #include "./include/main_menu_state.hpp"
-// #include "./include/explore_state.hpp" // TODO
-#include "./include/battle_state.hpp"
+#include "./include/explore_state.hpp"
 #include "./include/game.hpp"
-#include <cctype>
 #include <iostream>
 #include <memory>
-#include <string>
-#include <string_view>
 
 void MainMenuState::on_enter(Game&) {
     message_ = "Choose an option.";
@@ -29,8 +25,7 @@ void MainMenuState::handle_input(Game& game, std::string_view input) {
 
     if (choice == "1" || choice == "new" || choice == "new game") {
         game.get_world().reset_new_game();
-        // TODO: Change this to ExploreState when it's ready.
-        game.request_state_change(std::make_unique<BattleState>());
+        game.request_state_change(std::make_unique<ExploreState>());
         return;
     } else if (choice == "2" || choice == "quit" || choice == "exit") {
         game.quit();

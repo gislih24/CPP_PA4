@@ -1,424 +1,454 @@
 #include "./include/battle_state.hpp"
 #include "./include/character_classes.hpp"
-#include "./include/enemy.hpp"
-#include "./include/game_state.hpp"
-#include "./include/player_character.hpp"
+#include "./include/explore_state.hpp"
+#include "./include/game.hpp"
+#include <format>
 #include <iostream>
 #include <memory>
 #include <random>
-#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
-BattleState::BattleState() {
-    party.add_member(std::make_unique<Knight>());
-    party.add_member(std::make_unique<Wizard>());
-    //set stats for each party member
-    party.members()[0]->set_attack(3);
-    party.members()[0]->set_defence(2);
-    party.members()[0]->set_max_hp(14);
-    party.members()[0]->set_hp(14);
-    
-    party.members()[1]->set_attack(5);
-    party.members()[1]->set_defence(0);
-    party.members()[1]->set_max_hp(8);
-    party.members()[1]->set_hp(8);
+namespace {
 
-    
+std::pair<PlayerCharacter*, std::size_t>
+find_next_alive_member(Party& party, std::size_t start_index) {
+    auto& members = party.members();
+    for (std::size_t index = start_index; index < members.size(); ++index) {
+        if (members[index] != nullptr && members[index]->is_alive()) {
+            return {members[index].get(), index};
+        }
+    }
 
-    enemy.set_attack(4);
-    enemy.set_defence(1);
-    enemy.set_max_hp(10);
-    enemy.set_hp(10);
+    return {nullptr, members.size()};
 }
 
-void BattleState::on_enter(Game&) {
-    combat_log_.emplace_back("Woe, a fiend is upon ye!\n");
-
-    // Show initial action options only for the first alive party member so
-    // the player sees that character's menu on first render.
-    const auto& members = party.members();
-    for (const auto& member_ptr : members) {
-        if (!member_ptr || !member_ptr->is_alive()) {
-            continue;
+bool any_party_members_alive(const Party& party) {
+    for (const auto& member : party.members()) {
+        if (member != nullptr && member->is_alive()) {
+            return true;
         }
-
-        std::string class_name = "Adventurer";
-        std::string ability_1 = "none";
-        std::string ability_2 = "none";
-        if (dynamic_cast<Knight*>(member_ptr.get()) != nullptr) {
-            class_name = "Knight";
-            ability_1 = "shield_brace";
-            ability_2 = "dance";
-        } else if (dynamic_cast<Wizard*>(member_ptr.get()) != nullptr) {
-            class_name = "Wizard";
-            ability_1 = "fireball";
-            ability_2 = "heal";
-        }
-
-        combat_log_.emplace_back(
-            class_name +
-            "'s turn. Choose your action.\n1. attack\n2. " + ability_1 +
-            "\n3. " + ability_2 + "\n0. flee.\n");
-        break;
     }
+
+    return false;
+}
+
+std::string_view role_label(const PlayerCharacter& actor) {
+    if (dynamic_cast<const Knight*>(&actor) != nullptr) {
+        return "Knight";
+    }
+    if (dynamic_cast<const Wizard*>(&actor) != nullptr) {
+        return "Wizard";
+    }
+
+    return "Adventurer";
+}
+
+std::pair<std::string_view, std::string_view>
+role_abilities(const PlayerCharacter& actor) {
+    if (dynamic_cast<const Knight*>(&actor) != nullptr) {
+        return {"shield_brace", "dance"};
+    }
+    if (dynamic_cast<const Wizard*>(&actor) != nullptr) {
+        return {"fireball", "heal"};
+    }
+
+    return {"none", "none"};
+}
+
+} // namespace
+
+BattleState::BattleState(Enemy* enemy)
+    : enemy_(enemy),
+      encounter_position_(
+          enemy == nullptr ? Position{}
+                           : Position{enemy->get_x_pos(), enemy->get_y_pos()}),
+      enemy_name_(enemy == nullptr ? "Unknown enemy"
+                                   : std::string(enemy->get_name())) {}
+
+void BattleState::on_enter(Game& game) {
+    clear_message_vectors();
+    initialize_party(game);
+
+    if (enemy_ == nullptr) {
+        combat_log_.emplace_back("There is nothing here to fight.\n");
+        outcome_ = Outcome::Fled;
+        rebuild_status();
+        return;
+    }
+
+    if (!enemy_->is_alive()) {
+        combat_log_.emplace_back("The battle is already over.\n");
+        outcome_ = Outcome::Victory;
+        rebuild_status();
+        return;
+    }
+
+    combat_log_.emplace_back(std::format(
+        "Woe, a devious {} fiend blocks your path!\n", enemy_name_));
+    rebuild_status();
 }
 
 void BattleState::render(const Game&) const {
-    // For each of the message vectors
     for (const auto* message_vector :
          {&combat_log_, &status_display_, &action_menu_}) {
-        // For each message in the current message vector
         for (const auto& message : *message_vector) {
-            std::cout << message; // Print it
+            std::cout << message;
         }
     }
-    // Prompt for the player's input, similar to MainMenuState.
-    std::cout << "> " << std::flush;
+
+    std::cout << std::flush;
 }
 
-void BattleState::handle_input(Game&, std::string_view input) {
-    std::string choice = normalize_input(input);
-
+void BattleState::handle_input(Game& game, std::string_view input) {
+    const std::string choice = normalize_input(input);
     clear_message_vectors();
 
-    if (party.members().empty()) {
-        in_battle = false;
-        combat_log_.emplace_back("Your party is empty.\n");
+    if (outcome_ != Outcome::Ongoing) {
+        leave_battle(game);
         return;
     }
 
-    bool any_party_member_alive = false;
-    for (const auto& member_ptr : party.members()) {
-        if (member_ptr && member_ptr->is_alive()) {
-            any_party_member_alive = true;
-            break;
-        }
-    }
-
-    if (!in_battle || !any_party_member_alive || !enemy.is_alive()) {
+    if (enemy_ == nullptr || !enemy_->is_alive()) {
         combat_log_.emplace_back("The battle is already over.\n");
+        outcome_ = Outcome::Victory;
+        rebuild_status();
         return;
     }
 
-    bool player_fled = false;
-    // Find the current acting party member starting from current_actor_index.
-    PlayerCharacter* actor = nullptr;
-    std::size_t actor_index = current_actor_index;
-    auto& members = party.members();
-    while (actor_index < members.size()) {
-        if (members[actor_index] && members[actor_index]->is_alive()) {
-            actor = members[actor_index].get();
-            break;
-        }
-        ++actor_index;
+    auto& members = party_.members();
+    if (members.empty()) {
+        combat_log_.emplace_back("Your party is empty.\n");
+        outcome_ = Outcome::Defeat;
+        rebuild_status();
+        return;
     }
 
-    if (!actor) {
-        // No alive party members left.
-        in_battle = false;
+    if (!any_party_members_alive(party_)) {
         combat_log_.emplace_back(
             "Your party has been defeated... shameful display!\n");
+        outcome_ = Outcome::Defeat;
+        sync_party_leader(game);
+        rebuild_status();
         return;
     }
 
-    PlayerCharacter& pc = *actor;
-
-    std::string class_name = "Adventurer";
-    std::string ability_1 = "none";
-    std::string ability_2 = "none";
-    if (dynamic_cast<Knight*>(actor) != nullptr) {
-        class_name = "Knight";
-        ability_1 = "shield_brace";
-        ability_2 = "dance";
-    } else if (dynamic_cast<Wizard*>(actor) != nullptr) {
-        class_name = "Wizard";
-        ability_1 = "fireball";
-        ability_2 = "heal";
+    auto [actor, actor_index] =
+        find_next_alive_member(party_, current_actor_index_);
+    // If the current actor is dead find the next alive actor starting from the
+    // beginning of the party list.
+    if (actor == nullptr) {
+        current_actor_index_ = 0;
+        std::tie(actor, actor_index) = find_next_alive_member(party_, 0);
     }
 
-    auto append_menu_for = [&](PlayerCharacter* who, const std::string& cls,
-                               const std::string& a1,
-                               const std::string& a2) {
-        (void)who; // currently unused but kept for future extension
-        combat_log_.emplace_back(cls +
-                                 "'s turn. Choose your action.\n1. attack\n2. " +
-                                 a1 + "\n3. " + a2 + "\n0. flee.\n");
-    };
-
-    if (choice.empty()) {
-        append_menu_for(actor, class_name, ability_1, ability_2);
+    // If there are still no alive actors, the player has been defeated.
+    if (actor == nullptr) {
+        combat_log_.emplace_back(
+            "Your party has been defeated... shameful display!\n");
+        outcome_ = Outcome::Defeat;
+        sync_party_leader(game);
+        rebuild_status();
         return;
     }
 
-    if (choice == "1" || choice == "attack") {
-        damage_dealt = pc.attack(enemy);
-        combat_log_.emplace_back(class_name + " attacks and deals " +
-                                 std::to_string(damage_dealt) +
-                                 " damage.\n");
-    } else if (choice == "2") {
-        if (auto* knight = dynamic_cast<Knight*>(actor)) {
-            if (!shield_brace_active) {
-                for (auto& ally_ptr : party.members()) {
-                    if (!ally_ptr) {
-                        continue;
-                    }
-                    const int current_def =
-                        ally_ptr->get_stats().defence;
-                    ally_ptr->set_defence(current_def + 2);
-                }
-                shield_brace_active = true;
-                knight->shield_brace();
-                combat_log_.emplace_back(
-                    "Knight uses shield_brace. Allies' defence rises by 2 until next turn.\n");
-            } else {
-                combat_log_.emplace_back(
-                    "Shield brace is already active.\n");
-            }
-        } else if (auto* wizard = dynamic_cast<Wizard*>(actor)) {
-            damage_dealt = wizard->fireball(enemy); // TODO: make fireball damage all enemies
-            combat_log_.emplace_back(
-                "Wizard casts fireball and deals " +
-                std::to_string(damage_dealt) + " damage.\n");
-            // TODO: account for multiple enemies
-        } else {
-            combat_log_.emplace_back("No ability in slot 2.\n");
-        }
-    } else if (choice == "3") {
-        if (auto* wizard = dynamic_cast<Wizard*>(actor)) {
-            // Prompt the player to choose which ally to heal.
-            combat_log_.emplace_back(
-                "Choose an ally to heal (enter number):\n");
-            for (std::size_t i = 0; i < party.members().size(); ++i) {
-                const auto& ally = party.members()[i];
-                if (!ally || !ally->is_alive()) {
-                    continue;
-                }
-
-                std::string ally_label = "Ally";
-                if (dynamic_cast<Knight*>(ally.get()) != nullptr) {
-                    ally_label = "Knight";
-                } else if (dynamic_cast<Wizard*>(ally.get()) != nullptr) {
-                    ally_label = "Wizard";
-                }
-
-                combat_log_.emplace_back(
-                    std::to_string(i + 1) + ". " + ally_label +
-                    " HP: " + std::to_string(ally->get_hp()) + "/" +
-                    std::to_string(ally->get_stats().max_hp) + "\n");
-            }
-
-            // Print the accumulated messages so the prompt shows
-            // before we read from stdin.
-            for (const auto* message_vector :
-                 {&combat_log_, &status_display_, &action_menu_}) {
-                for (const auto& message : *message_vector) {
-                    std::cout << message;
-                }
-            }
-
-            std::string target_input;
-            if (!std::getline(std::cin, target_input)) {
-                combat_log_.emplace_back(
-                    "No target selected for healing.\n");
-            } else {
-                int idx = -1;
-                try {
-                    idx = std::stoi(target_input);
-                } catch (...) {
-                    idx = -1;
-                }
-
-                if (idx <= 0 ||
-                    static_cast<std::size_t>(idx) >
-                        party.members().size() ||
-                    !party.members()[static_cast<std::size_t>(idx) - 1] ||
-                    !party.members()[static_cast<std::size_t>(idx) - 1]
-                         ->is_alive()) {
-                    combat_log_.emplace_back(
-                        "Invalid ally selection. Healing fails.\n");
-                } else {
-                    auto& target_ptr =
-                        party.members()[static_cast<std::size_t>(idx) - 1];
-                    auto& target_pc = *target_ptr;
-                    wizard->healing_touch(target_pc);
-                    combat_log_.emplace_back(
-                        "Wizard casts healing touch on ally " +
-                        std::to_string(idx) + ".\n");
-                }
-            }
-        } else if (auto* knight = dynamic_cast<Knight*>(actor)) {
-            combat_log_.emplace_back("Knight dances...\n");
-        } else {
-            combat_log_.emplace_back("No ability in slot 3.\n");
-        }
-    } else if (choice == "0" || choice == "flee") {
-        in_battle = false;
-        player_fled = true;
-        combat_log_.emplace_back("You flee... a coward's choice.\n");
-    } else {
-        combat_log_.emplace_back("Invalid choice.\n");
-    }
-
-    if (!enemy.is_alive()) {
-        in_battle = false;
-        combat_log_.emplace_back("You emerge victorious!\n");
-        return;
-    }
-
-    // If there are more alive party members after this one, advance the
-    // actor index and prepare the next actor's menu. Enemy waits.
-    std::size_t next_index = actor_index + 1;
-    PlayerCharacter* next_actor = nullptr;
-    while (next_index < members.size()) {
-        if (members[next_index] && members[next_index]->is_alive()) {
-            next_actor = members[next_index].get();
-            break;
-        }
-        ++next_index;
-    }
-
-    if (in_battle && enemy.is_alive() && !player_fled && next_actor) {
-        current_actor_index = next_index;
-
-        // Prepare the next actor's menu so it is visible on the next render.
-        std::string next_class = "Adventurer";
-        std::string next_a1 = "none";
-        std::string next_a2 = "none";
-        if (dynamic_cast<Knight*>(next_actor) != nullptr) {
-            next_class = "Knight";
-            next_a1 = "shield_brace";
-            next_a2 = "dance";
-        } else if (dynamic_cast<Wizard*>(next_actor) != nullptr) {
-            next_class = "Wizard";
-            next_a1 = "fireball";
-            next_a2 = "heal";
-        }
-
-        append_menu_for(next_actor, next_class, next_a1, next_a2);
-        return;
-    }
-
-    // No more player characters this round; enemy takes its turn.
-    current_actor_index = 0;
-
-    if (in_battle && enemy.is_alive() && !player_fled) {
-        // Choose a random alive party member as the target.
-        std::vector<PlayerCharacter*> alive_members;
-        for (auto& member_ptr : party.members()) {
-            if (member_ptr && member_ptr->is_alive()) {
-                alive_members.push_back(member_ptr.get());
-            }
-        }
-
-        if (alive_members.empty()) {
-            in_battle = false;
-            combat_log_.emplace_back("Your party has been defeated... shameful display!\n");
+    if (awaiting_heal_target_) {
+        auto* wizard = dynamic_cast<Wizard*>(actor);
+        if (wizard == nullptr) {
+            awaiting_heal_target_ = false;
+            rebuild_status();
             return;
         }
 
-        // Simple pseudo-random selection each enemy turn.
-        static std::mt19937 rng(std::random_device{}());
-        std::uniform_int_distribution<std::size_t> dist(0, alive_members.size() - 1);
-        PlayerCharacter* target = alive_members[dist(rng)];
-
-        std::string target_label = "Ally";
-        if (dynamic_cast<Knight*>(target) != nullptr) {
-            target_label = "Knight";
-        } else if (dynamic_cast<Wizard*>(target) != nullptr) {
-            target_label = "Wizard";
+        if (choice.empty()) {
+            rebuild_status();
+            return;
         }
 
-        damage_dealt = enemy.attack(*target);
-        combat_log_.emplace_back("\n" + target_label + " was hit for " +
-                     std::to_string(damage_dealt) +
-                     " damage.\n\n");
+        if (choice == "0" || choice == "cancel") {
+            awaiting_heal_target_ = false;
+            combat_log_.emplace_back("Healing cancelled.\n");
+            rebuild_status();
+            return;
+        }
 
-        // Shield brace bonus ends after the enemy has taken its turn.
-        if (shield_brace_active) {
-            for (auto& member_ptr : party.members()) {
-                if (!member_ptr) {
-                    continue;
+        int selected_index = -1;
+        try {
+            selected_index = std::stoi(choice);
+        } catch (const std::invalid_argument&) {
+            selected_index = -1;
+        }
+
+        if (selected_index <= 0 ||
+            static_cast<std::size_t>(selected_index) > members.size() ||
+            members[static_cast<std::size_t>(selected_index) - 1] == nullptr ||
+            !members[static_cast<std::size_t>(selected_index) - 1]
+                 ->is_alive()) {
+            combat_log_.emplace_back("Invalid ally selection.\n");
+            rebuild_status();
+            return;
+        }
+
+        auto& target = *members[static_cast<std::size_t>(selected_index) - 1];
+        wizard->healing_touch(target);
+        awaiting_heal_target_ = false;
+        combat_log_.emplace_back(std::format(
+            "Wizard casts healing touch on {}.\n", role_label(target)));
+        sync_party_leader(game);
+    } else {
+        if (choice.empty()) {
+            rebuild_status();
+            return;
+        }
+
+        const auto [ability_1, ability_2] = role_abilities(*actor);
+
+        if (choice == "1" || choice == "attack") {
+            const int damage_dealt = actor->attack(*enemy_);
+            combat_log_.emplace_back(
+                std::format("{} attacks and deals {} damage.\n",
+                            role_label(*actor), damage_dealt));
+        } else if (choice == "2" || choice == ability_1) {
+            if (auto* knight = dynamic_cast<Knight*>(actor)) {
+                if (shield_brace_active_) {
+                    combat_log_.emplace_back(
+                        "Shield brace is already active.\n");
+                    rebuild_status();
+                    return;
                 }
-                const int current_def = member_ptr->get_stats().defence;
-                member_ptr->set_defence(current_def - 2);
-            }
-            shield_brace_active = false;
-        }
 
-        bool party_still_alive = false;
-        for (const auto& member_ptr : party.members()) {
-            if (member_ptr && member_ptr->is_alive()) {
-                party_still_alive = true;
-                break;
+                for (auto const& ally : members) {
+                    if (ally != nullptr) {
+                        ally->set_defence(ally->get_stats().defence + 2);
+                    }
+                }
+                shield_brace_active_ = true;
+                knight->shield_brace();
+                combat_log_.emplace_back("Knight uses shield_brace. Allies' "
+                                         "defence increased by 2 until the "
+                                         "enemy acts.\n");
+            } else if (auto* wizard = dynamic_cast<Wizard*>(actor)) {
+                const int damage_dealt = wizard->fireball(*enemy_);
+                combat_log_.emplace_back(
+                    std::format("Wizard casts fireball and deals {} damage.\n",
+                                damage_dealt));
+            } else {
+                combat_log_.emplace_back("No ability is bound to slot 2.\n");
+                rebuild_status();
+                return;
             }
-        }
+        } else if (choice == "3" || choice == ability_2) {
+            if (dynamic_cast<Wizard*>(actor) != nullptr) {
+                awaiting_heal_target_ = true;
+                rebuild_status();
+                return;
+            }
 
-        if (!party_still_alive) {
-            in_battle = false;
-            combat_log_.emplace_back("Your party has been defeated... shameful display!\n");
-            // TODO: Add the line:
-            // game.request_state_change(std::make_unique<GameOverState>)
+            if (dynamic_cast<Knight*>(actor) != nullptr) {
+                combat_log_.emplace_back(
+                    "Knight dances. Morale rises, but nothing else happens.\n");
+            } else {
+                combat_log_.emplace_back("No ability is bound to slot 3.\n");
+                rebuild_status();
+                return;
+            }
+        } else if (choice == "0" || choice == "flee") {
+            combat_log_.emplace_back("You flee... a coward's choice.\n");
+            outcome_ = Outcome::Fled;
+            sync_party_leader(game);
+            rebuild_status();
+            return;
+        } else {
+            combat_log_.emplace_back("Invalid choice.\n");
+            rebuild_status();
+            return;
+        }
+    }
+
+    if (!members.front()->is_alive()) {
+        combat_log_.emplace_back(
+            "The Knight falls. The adventure ends here.\n");
+        outcome_ = Outcome::Defeat;
+        sync_party_leader(game);
+        rebuild_status();
+        return;
+    }
+
+    if (!enemy_->is_alive()) {
+        combat_log_.emplace_back("You emerge victorious!\n");
+        outcome_ = Outcome::Victory;
+        sync_party_leader(game);
+        rebuild_status();
+        return;
+    }
+
+    auto [next_actor, next_index] =
+        find_next_alive_member(party_, actor_index + 1);
+    if (next_actor != nullptr) {
+        current_actor_index_ = next_index;
+        sync_party_leader(game);
+        rebuild_status();
+        return;
+    }
+
+    current_actor_index_ = 0;
+
+    std::vector<PlayerCharacter*> alive_members;
+    alive_members.reserve(members.size());
+    for (auto const& member : members) {
+        if (member != nullptr && member->is_alive()) {
+            alive_members.push_back(member.get());
         }
     }
 
-    if (in_battle) {
-        status_display_.emplace_back("\n");
-        for (std::size_t index = 0; index < party.members().size(); ++index) {
-            const auto& member_ptr = party.members()[index];
-            if (!member_ptr) {
-                continue;
-            }
-
-            std::string member_label = "Ally";
-            if (dynamic_cast<Knight*>(member_ptr.get()) != nullptr) {
-                member_label = "Knight";
-            } else if (dynamic_cast<Wizard*>(member_ptr.get()) != nullptr) {
-                member_label = "Wizard";
-            }
-
-            status_display_.emplace_back(
-                member_label + " HP: " +
-                std::to_string(member_ptr->get_hp()) + "/" +
-                std::to_string(member_ptr->get_stats().max_hp) + "\n");
-        }
-        status_display_.emplace_back("Enemy HP: " +
-                                     std::to_string(enemy.get_hp()) + "/" +
-                                     std::to_string(
-                                         enemy.get_stats().max_hp) +
-                                     "\n\n");
-
-        // Prepare the next round's first actor menu so the player
-        // doesn't need to press Enter just to see it.
-        const auto& members_for_next = party.members();
-        for (const auto& member_ptr : members_for_next) {
-            if (!member_ptr || !member_ptr->is_alive()) {
-                continue;
-            }
-
-            std::string next_class = "Adventurer";
-            std::string next_a1 = "none";
-            std::string next_a2 = "none";
-            if (dynamic_cast<Knight*>(member_ptr.get()) != nullptr) {
-                next_class = "Knight";
-                next_a1 = "shield_brace";
-                next_a2 = "dance";
-            } else if (dynamic_cast<Wizard*>(member_ptr.get()) != nullptr) {
-                next_class = "Wizard";
-                next_a1 = "fireball";
-                next_a2 = "heal";
-            }
-
-            action_menu_.emplace_back(
-                next_class +
-                "'s turn. Choose your action.\n1. attack\n2. " + next_a1 +
-                "\n3. " + next_a2 + "\n0. flee.\n");
-            break; // only the first alive member
-        }
+    if (alive_members.empty()) {
+        combat_log_.emplace_back(
+            "Your party has been defeated... shameful display!\n");
+        outcome_ = Outcome::Defeat;
+        sync_party_leader(game);
+        rebuild_status();
+        return;
     }
+
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<std::size_t> dist(0,
+                                                    alive_members.size() - 1);
+    PlayerCharacter* target = alive_members[dist(rng)];
+
+    const int damage_dealt = enemy_->attack(*target);
+    combat_log_.emplace_back(std::format("{} hits {} for {} damage.\n",
+                                         enemy_name_, role_label(*target),
+                                         damage_dealt));
+
+    if (shield_brace_active_) {
+        for (auto const& member : members) {
+            if (member != nullptr) {
+                member->set_defence(member->get_stats().defence - 2);
+            }
+        }
+        shield_brace_active_ = false;
+        combat_log_.emplace_back("Shield brace wears off.\n");
+    }
+
+    if (!any_party_members_alive(party_)) {
+        combat_log_.emplace_back(
+            "Your party has been defeated... shameful display!\n");
+        outcome_ = Outcome::Defeat;
+        sync_party_leader(game);
+        rebuild_status();
+        return;
+    }
+
+    sync_party_leader(game);
+    rebuild_status();
 }
 
 void BattleState::clear_message_vectors() {
     combat_log_.clear();
     status_display_.clear();
     action_menu_.clear();
+}
+
+void BattleState::initialize_party(const Game& game) {
+    if (!party_.members().empty()) {
+        return;
+    }
+
+    const auto& player = game.get_world().get_player();
+    party_.add_member(
+        std::make_unique<Knight>(player.get_stats(), player.get_hp()));
+    party_.add_member(std::make_unique<Wizard>());
+}
+
+void BattleState::rebuild_status() {
+    status_display_.emplace_back("Party status\n");
+    for (const auto& member : party_.members()) {
+        if (member == nullptr) {
+            continue;
+        }
+
+        status_display_.emplace_back(
+            std::format("{} HP: {}/{}\n", role_label(*member), member->get_hp(),
+                        member->get_stats().max_hp));
+    }
+
+    const int enemy_hp = enemy_ == nullptr ? 0 : enemy_->get_hp();
+    const int enemy_max_hp = enemy_ == nullptr ? 0 : enemy_->get_stats().max_hp;
+    status_display_.emplace_back(
+        std::format("{} HP: {}/{}\n", enemy_name_, enemy_hp, enemy_max_hp));
+
+    switch (outcome_) {
+    case Outcome::Ongoing:
+        if (awaiting_heal_target_) {
+            action_menu_.emplace_back("Choose an ally to heal:\n");
+            for (std::size_t index = 0; index < party_.members().size();
+                 ++index) {
+                const auto& member = party_.members()[index];
+                if (member == nullptr || !member->is_alive()) {
+                    continue;
+                }
+
+                action_menu_.emplace_back(std::format(
+                    "{}. {} HP: {}/{}\n", index + 1, role_label(*member),
+                    member->get_hp(), member->get_stats().max_hp));
+            }
+            action_menu_.emplace_back("0. cancel\n");
+        } else {
+            auto [actor, unused_index] =
+                find_next_alive_member(party_, current_actor_index_);
+            (void)unused_index;
+            if (actor != nullptr) {
+                const auto [ability_1, ability_2] = role_abilities(*actor);
+                action_menu_.emplace_back(
+                    std::format("{}'s turn. Choose an action:\n1. attack\n2. "
+                                "{}\n3. {}\n0. flee\n",
+                                role_label(*actor), ability_1, ability_2));
+            } else {
+                action_menu_.emplace_back("No one is left standing.\n");
+            }
+        }
+        break;
+    case Outcome::Victory:
+        action_menu_.emplace_back("Press enter to return to the overworld.\n");
+        break;
+    case Outcome::Fled:
+        action_menu_.emplace_back("Press enter to return to the overworld.\n");
+        break;
+    case Outcome::Defeat:
+        action_menu_.emplace_back("Press enter to end the run.\n");
+        break;
+    }
+
+    action_menu_.emplace_back("> ");
+}
+
+void BattleState::sync_party_leader(Game& game) {
+    if (party_.members().empty() || party_.members().front() == nullptr) {
+        return;
+    }
+
+    game.get_world().get_player().set_hp(party_.members().front()->get_hp());
+}
+
+void BattleState::leave_battle(Game& game) {
+    sync_party_leader(game);
+
+    switch (outcome_) {
+    case Outcome::Victory:
+        game.get_world().remove_enemy(enemy_);
+        game.get_world().set_player_position(encounter_position_);
+        game.request_state_change(std::make_unique<ExploreState>(
+            std::format("You defeated {}.", enemy_name_)));
+        return;
+    case Outcome::Fled:
+        game.request_state_change(std::make_unique<ExploreState>(
+            "You retreat to your previous tile."));
+        return;
+    case Outcome::Defeat:
+        game.quit();
+        return;
+    case Outcome::Ongoing:
+        return;
+    }
 }
