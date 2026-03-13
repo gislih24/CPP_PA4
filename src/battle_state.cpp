@@ -6,9 +6,13 @@
 #include <memory>
 #include <print>
 
-BattleState::BattleState()
-    : pc("The Knight", Stats{10, 2, 1}, 10),
-      enemy("Fiend", Stats{10, 4, 1}, 10) {}
+BattleState::BattleState(Enemy* enemy)
+    : enemy_(enemy),
+      encounter_position_(
+          enemy == nullptr ? Position{}
+                           : Position{enemy->get_x_pos(), enemy->get_y_pos()}),
+      enemy_name_(enemy == nullptr ? "Unknown enemy"
+                                   : std::string(enemy->get_name())) {}
 
 void BattleState::on_enter(Game&) {
     combat_log_.emplace_back("Woe, a fiend is upon ye!");

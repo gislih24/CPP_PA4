@@ -10,13 +10,7 @@
 
 class BattleState final : public GameState {
   public:
-    PlayerCharacter pc;
-    Enemy enemy;
-    std::string line;
-    bool in_battle = true;
-    int damage_dealt = 0;
-
-    BattleState();
+    explicit BattleState(Enemy* enemy);
     void on_enter(Game& game) override;
     void render(const Game& game) const override;
     void handle_input(Game& game, std::string_view input) override;
