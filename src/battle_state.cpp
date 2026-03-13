@@ -125,17 +125,9 @@ void BattleState::handle_input(Game& game, std::string_view input) {
         return;
     }
 
-    if (members.front() == nullptr || !members.front()->is_alive()) {
-        combat_log_.emplace_back(
-            "The Knight falls. The adventure ends here.\n");
-        outcome_ = Outcome::Defeat;
-        sync_party_leader(game);
-        rebuild_status();
-        return;
-    }
-
     if (!any_party_members_alive(party_)) {
-        combat_log_.emplace_back("Your party has been defeated.\n");
+        combat_log_.emplace_back(
+            "Your party has been defeated... shameful display!\n");
         outcome_ = Outcome::Defeat;
         sync_party_leader(game);
         rebuild_status();
@@ -144,13 +136,17 @@ void BattleState::handle_input(Game& game, std::string_view input) {
 
     auto [actor, actor_index] =
         find_next_alive_member(party_, current_actor_index_);
+    // If the current actor is dead find the next alive actor starting from the
+    // beginning of the party list.
     if (actor == nullptr) {
         current_actor_index_ = 0;
         std::tie(actor, actor_index) = find_next_alive_member(party_, 0);
     }
 
+    // If there are still no alive actors, the player has been defeated.
     if (actor == nullptr) {
-        combat_log_.emplace_back("Your party has been defeated.\n");
+        combat_log_.emplace_back(
+            "Your party has been defeated... shameful display!\n");
         outcome_ = Outcome::Defeat;
         sync_party_leader(game);
         rebuild_status();
@@ -229,9 +225,9 @@ void BattleState::handle_input(Game& game, std::string_view input) {
                 }
                 shield_brace_active_ = true;
                 knight->shield_brace();
-                combat_log_.emplace_back(
-                    "Knight uses shield_brace. Allies gain 2 defence until the "
-                    "enemy acts.\n");
+                combat_log_.emplace_back("Knight uses shield_brace. Allies' "
+                                         "defence increased by 2 until the "
+                                         "enemy acts.\n");
             } else if (auto* wizard = dynamic_cast<Wizard*>(actor)) {
                 const int damage_dealt = wizard->fireball(*enemy_);
                 combat_log_.emplace_back(
@@ -307,7 +303,8 @@ void BattleState::handle_input(Game& game, std::string_view input) {
     }
 
     if (alive_members.empty()) {
-        combat_log_.emplace_back("Your party has been defeated.\n");
+        combat_log_.emplace_back(
+            "Your party has been defeated... shameful display!\n");
         outcome_ = Outcome::Defeat;
         sync_party_leader(game);
         rebuild_status();
@@ -334,17 +331,9 @@ void BattleState::handle_input(Game& game, std::string_view input) {
         combat_log_.emplace_back("Shield brace wears off.\n");
     }
 
-    if (!members.front()->is_alive()) {
-        combat_log_.emplace_back(
-            "The Knight falls. The adventure ends here.\n");
-        outcome_ = Outcome::Defeat;
-        sync_party_leader(game);
-        rebuild_status();
-        return;
-    }
-
     if (!any_party_members_alive(party_)) {
-        combat_log_.emplace_back("Your party has been defeated.\n");
+        combat_log_.emplace_back(
+            "Your party has been defeated... shameful display!\n");
         outcome_ = Outcome::Defeat;
         sync_party_leader(game);
         rebuild_status();
