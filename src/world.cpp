@@ -55,6 +55,47 @@ const std::vector<std::unique_ptr<Enemy>>& World::get_enemies() const noexcept {
     return enemies_;
 }
 
+const std::vector<std::vector<Entity*>>&
+World::get_overworld_occupants() const noexcept {
+    return overworld_occupants_;
+}
+
+int World::defeated_enemies() const noexcept {
+    return defeated_enemies_;
+}
+
+MoveOutcome World::try_move_player(int row_change, int col_change) noexcept {
+    const Position current{player_.get_x_pos(), player_.get_y_pos()};
+    const Position destination{
+        current.row + row_change,
+        current.col + col_change,
+    };
+
+    if (!is_in_bounds(destination)) {
+        return {.result = MoveResult::out_of_bounds,
+                .destination = destination,
+                .enemy = nullptr};
+    }
+
+    Entity* occupant = get_occupant_at(destination);
+    if (occupant == nullptr) {
+        set_player_position(destination);
+        return {.result = MoveResult::moved,
+                .destination = destination,
+                .enemy = nullptr};
+    }
+
+    if (auto* enemy = dynamic_cast<Enemy*>(occupant)) {
+        return {.result = MoveResult::enemy_encounter,
+                .destination = destination,
+                .enemy = enemy};
+    }
+
+    return {.result = MoveResult::blocked,
+            .destination = destination,
+            .enemy = nullptr};
+}
+
 void World::populate_overworld() {
     move_entity(&player_, player_.get_x_pos(), player_.get_y_pos());
     for (const auto& enemy : enemies_) {
