@@ -162,4 +162,34 @@ void World::move_entity(Entity* entity, int new_x_pos, int new_y_pos) noexcept {
     set_tile({new_x_pos, new_y_pos}, entity);
     entity->set_position(new_x_pos, new_y_pos);
 }
+
+bool World::is_in_bounds(Position position) const noexcept {
+    return position.row >= 0 && position.row < WORLD_HEIGHT &&
+           position.col >= 0 && position.col < WORLD_WIDTH;
+}
+
+Entity* World::get_occupant_at(Position position) const noexcept {
+    if (!is_in_bounds(position)) {
+        return nullptr;
+    }
+
+    return overworld_occupants_[to_index(position.row)][to_index(position.col)];
+}
+
+void World::clear_tile(Position position) noexcept {
+    if (!is_in_bounds(position)) {
+        return;
+    }
+
+    overworld_occupants_[to_index(position.row)][to_index(position.col)] =
+        nullptr;
+}
+
+void World::set_tile(Position position, Entity* entity) noexcept {
+    if (!is_in_bounds(position)) {
+        return;
+    }
+
+    overworld_occupants_[to_index(position.row)][to_index(position.col)] =
+        entity;
 }
