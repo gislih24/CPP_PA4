@@ -42,58 +42,55 @@ void BattleState::render(const Game&) const {
     std::cout << std::flush;
 }
 
-void BattleState::handle_input(Game&, std::string_view input) {
+void BattleState::handle_input(Game& game, std::string_view input) {
     const std::string choice = normalize_input(input);
-
     clear_message_vectors();
 
-    // If for some reason the battle started, but it's already over.
-    if (!in_battle || !pc.is_alive() || !enemy.is_alive()) {
+    if (outcome_ != Outcome::Ongoing) {
+        leave_battle(game);
+        return;
+    }
+
+    auto& pc = game.get_world().get_player();
+    if (enemy_ == nullptr || !enemy_->is_alive()) {
         combat_log_.emplace_back("The battle is already over.\n");
+        outcome_ = Outcome::Victory;
+        rebuild_status(game);
         return;
     }
 
     if (choice == "1" || choice == "attack") {
-        damage_dealt = pc.attack(enemy);
-        combat_log_.emplace_back(
-            std::format("You hit the enemy and dealt {} damage.\n",
-                        std::to_string(damage_dealt)));
+        const int damage_dealt = pc.attack(*enemy_);
+        combat_log_.emplace_back(std::format("You hit {} for {} damage.\n",
+                                             enemy_name_, damage_dealt));
 
-        if (!enemy.is_alive()) {
-            in_battle = false;
+        if (!enemy_->is_alive()) {
+            outcome_ = Outcome::Victory;
             combat_log_.emplace_back("You emerge victorious!\n");
+            rebuild_status(game);
+            return;
         }
     } else if (choice == "2" || choice == "flee") {
-        in_battle = false;
+        outcome_ = Outcome::Fled;
         combat_log_.emplace_back("You flee... a coward's choice.\n");
-        // TODO: Add the line:
-        // game.request_state_change(std::make_unique<ExploreState>)
+        rebuild_status(game);
+        return;
     } else {
         combat_log_.emplace_back("Invalid choice.\n");
+        rebuild_status(game);
+        return;
     }
 
     // Basic attack from enemy.
-    if (in_battle && enemy.is_alive()) {
-        damage_dealt = enemy.attack(pc);
-        combat_log_.emplace_back(std::format("You were hit for {} damage.\n",
-                                             std::to_string(damage_dealt)));
-        // YOU DIED
-        if (!pc.is_alive()) {
-            in_battle = false;
-            combat_log_.emplace_back("You have died... shameful display!\n");
-            // TODO: Add the line:
-            // game.request_state_change(std::make_unique<GameOverState>)
-        }
+    const int damage_dealt = enemy_->attack(pc);
+    combat_log_.emplace_back(
+        std::format("{} hits you for {} damage.\n", enemy_name_, damage_dealt));
+    if (!pc.is_alive()) {
+        outcome_ = Outcome::Defeat;
+        combat_log_.emplace_back("You have died.\n");
     }
 
-    // Update the status display
-    if (in_battle) {
-        status_display_.emplace_back(
-            std::format("Your HP: {}/{}", pc.get_hp(), pc.get_stats().max_hp));
-        status_display_.emplace_back(std::format(
-            "Enemy HP: {}/{}", enemy.get_hp(), enemy.get_stats().max_hp));
-        action_menu_.emplace_back("Choose an action:\n1. attack\n2. flee\n");
-    }
+    rebuild_status(game);
 }
 
 void BattleState::clear_message_vectors() {

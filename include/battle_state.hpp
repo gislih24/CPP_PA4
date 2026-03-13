@@ -1,10 +1,7 @@
 #pragma once
 
-#include "enemy.hpp"
 #include "game_state.hpp"
-#include "player_character.hpp"
-#include <iostream>
-#include <print>
+#include "world.hpp"
 #include <string>
 #include <vector>
 
